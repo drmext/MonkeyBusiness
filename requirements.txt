@@ -1,0 +1,16 @@
+anyio
+asgiref
+click
+colorama
+fastapi
+h11
+idna
+kbinxml
+lxml
+pycryptodomex
+pydantic
+sniffio
+starlette
+tinydb
+typing_extensions
+uvicorn
