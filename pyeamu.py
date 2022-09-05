@@ -16,6 +16,7 @@ def urlpathjoin(parts, sep='/'):
 
 server_address = f"{config.ip}:{config.port}"
 server_services_url = urlunparse(('http', server_address, config.services_prefix, None, None, None))
+keepalive_address = "127.0.0.1"
 
 app = FastAPI()
 for router in modules.routers:
@@ -63,14 +64,14 @@ async def services_get(request: Request):
             services[k] = urlunparse(('http', server_address, service.prefix, None, None, None))
 
     keepalive_params = {
-        "pa": config.ip,
-        "ia": config.ip,
-        "ga": config.ip,
-        "ma": config.ip,
+        "pa": keepalive_address,
+        "ia": keepalive_address,
+        "ga": keepalive_address,
+        "ma": keepalive_address,
         "t1": 2,
         "t2": 10,
     }
-    services["keepalive"] = urlunparse(('http', config.ip, "/keepalive", None, urlencode(keepalive_params), None))
+    services["keepalive"] = urlunparse(('http', keepalive_address, "/keepalive", None, urlencode(keepalive_params), None))
     services["ntp"] = urlunparse(('ntp', "pool.ntp.org", "/", None, None, None))
     services["services"] = urlunparse(('http', server_address, "/core", None, None, None))
 
