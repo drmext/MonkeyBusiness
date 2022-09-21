@@ -72,21 +72,24 @@ async def usergamedata_advanced(request: Request):
 
     if mode == 'userload':
         all_scores = {}
-        for record in db.table('ddr_scores_best').search(where('game_version') == game_version):
-            mcode = str(record['mcode'])
-            if mcode not in all_scores.keys():
-                scores = []
-                for difficulty in range(10):
-                    s = db.table('ddr_scores_best').get(
-                        (where('mcode') == int(mcode))
-                        & (where('difficulty') == difficulty)
-                    )
-                    if s == None:
-                        scores.append([0, 0, 0, 0, 0])
-                    else:
-                        scores.append([1, s['rank'], s['lamp'], s['score'], s['ghostid']])
-
-                all_scores[mcode] = scores
+        if all_profiles_for_card is not None:
+            ddr_id = all_profiles_for_card['ddr_id']
+            for record in db.table('ddr_scores_best').search(where('game_version') == game_version):
+                mcode = str(record['mcode'])
+                if mcode not in all_scores.keys():
+                    scores = []
+                    for difficulty in range(10):
+                        s = db.table('ddr_scores_best').get(
+                            (where('ddr_id') == ddr_id)
+                            & (where('game_version') == game_version)
+                            & (where('mcode') == int(mcode))
+                            & (where('difficulty') == difficulty)
+                        )
+                        if s == None:
+                            scores.append([0, 0, 0, 0, 0])
+                        else:
+                            scores.append([1, s['rank'], s['lamp'], s['score'], s['ghostid']])
+                    all_scores[mcode] = scores
 
         response = E.response(
             E.playerdata(
