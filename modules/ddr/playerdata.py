@@ -29,9 +29,12 @@ def get_game_profile(cid, game_version):
 
 def get_common(ddr_id, game_version, idx):
     profile = get_db().table('ddr_profile').get(
-        where('ddr_id') == ddr_id
+        where('ddr_id') == int(ddr_id)
     )
-    return profile['version'].get(str(game_version), None)['common'].split(',')[idx]
+    if profile is not None:
+        return profile['version'].get(str(game_version), None)['common'].split(',')[idx]
+    else:
+        return 0
 
 @router.post('/{gameinfo}/playerdata/usergamedata_advanced')
 async def usergamedata_advanced(request: Request):
@@ -62,6 +65,9 @@ async def usergamedata_advanced(request: Request):
             'guideline': "Center",
             'priority': "Judgment",
             'timing_disp': "On",
+            'rival_1_ddr_id': 0,
+            'rival_2_ddr_id': 0,
+            'rival_3_ddr_id': 0,
         }
 
         db.table('ddr_profile').upsert(all_profiles_for_card, where('card') == refid)
@@ -334,38 +340,36 @@ async def usergamedata_advanced(request: Request):
         ddrcode = int(request_info['root'][0].find('data/ddrcode').text)
         pcbid = request_info['root'][0].find('data/pcbid').text
 
-        world_record = []
-        for record in db.table('ddr_scores_wr'):
-            world_record.append(record)
-
         if loadflag in (1, 2, 4):
-            response = E.response(
-                E.playerdata(
-                    E.result(0, __type="s32"),
-                    E.data(
-                        E.recordtype(loadflag, __type="s32"),
-                        *[E.record(
-                            E.mcode(s['mcode'], __type="u32"),
-                            E.notetype(s['difficulty'], __type="u8"),
-                            E.rank(s['rank'], __type="u8"),
-                            E.clearkind(s['lamp'], __type="u8"),
-                            E.flagdata(0, __type="u8"),
-                            E.name(get_common(s['ddr_id'], game_version, 27), __type="str"),
-                            E.area(int(get_common(s['ddr_id'], game_version, 3), 16), __type="s32"),
-                            E.code(s['ddr_id'], __type="s32"),
-                            E.score(s['score'], __type="s32"),
-                            E.ghostid(s['ghostid'], __type="s32"),
-                        )for s in world_record]
-                    )
-                )
-            )
+            scores = []
+            for s in db.table('ddr_scores_wr'):
+                scores.append(s)
 
-        else:
-            response = E.response(
-                E.playerdata(
-                    E.result(0, __type="s32"),
+        elif loadflag in (8, 16, 32):
+            scores = []
+            for s in db.table('ddr_scores_best').search(where('ddr_id') == ddrcode):
+                scores.append(s)
+
+        response = E.response(
+            E.playerdata(
+                E.result(0, __type="s32"),
+                E.data(
+                    E.recordtype(loadflag, __type="s32"),
+                    *[E.record(
+                        E.mcode(s['mcode'], __type="u32"),
+                        E.notetype(s['difficulty'], __type="u8"),
+                        E.rank(s['rank'], __type="u8"),
+                        E.clearkind(s['lamp'], __type="u8"),
+                        E.flagdata(0, __type="u8"),
+                        E.name(get_common(s['ddr_id'], game_version, 27), __type="str"),
+                        E.area(int(get_common(s['ddr_id'], game_version, 3), 16), __type="s32"),
+                        E.code(s['ddr_id'], __type="s32"),
+                        E.score(s['score'], __type="s32"),
+                        E.ghostid(s['ghostid'], __type="s32"),
+                    )for s in scores]
                 )
             )
+        )
 
     if mode == 'ghostload':
         ghostid = int(request_info['root'][0].find('data/ghostid').text)
@@ -430,11 +434,19 @@ async def usergamedata_recv(request: Request):
         option[18] = timing_disp.index(profile['timing_disp'])
         option_load = ",".join([str(i) for i in option])
 
+        rival = profile['rival'].split(',')
+        rival_ids = [profile.get('rival_1_ddr_id', 0), profile.get('rival_2_ddr_id', 0), profile.get('rival_3_ddr_id', 0)]
+        for idx, r in enumerate(rival_ids, start=3):
+            if r != 0:
+                rival[idx] = idx - 2
+                rival[idx + 8] = get_common(r, game_version, 4)
+        rival_load = ",".join([str(i) for i in rival])
+
         load = [
             b64encode(str.encode(common_load.split('ffffffff,COMMON,')[1])).decode(),
             b64encode(str.encode(option_load.split('ffffffff,OPTION,')[1])).decode(),
             b64encode(str.encode(profile['last'].split('ffffffff,LAST,')[1])).decode(),
-            b64encode(str.encode(profile['rival'].split('ffffffff,RIVAL,')[1])).decode()
+            b64encode(str.encode(rival_load.split('ffffffff,RIVAL,')[1])).decode()
         ]
 
     response = E.response(
@@ -473,6 +485,9 @@ async def usergamedata_send(request: Request):
         game_profile['option'] = b64decode(data.find('record')[1].text.split('<bin1')[0]).decode(encoding='utf-8', errors='ignore')
         game_profile['last'] = b64decode(data.find('record')[2].text.split('<bin1')[0]).decode(encoding='utf-8', errors='ignore')
         game_profile['rival'] = b64decode(data.find('record')[3].text.split('<bin1')[0]).decode(encoding='utf-8', errors='ignore')
+        for r in ('rival_1_ddr_id', 'rival_2_ddr_id', 'rival_3_ddr_id'):
+            if r not in game_profile:
+                game_profile[r] = 0
 
     profile['version'][str(game_version)] = game_profile
 
