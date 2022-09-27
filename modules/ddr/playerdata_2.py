@@ -27,6 +27,11 @@ def get_game_profile(cid, game_version):
 
     return profile['version'].get(str(game_version), None)
 
+def get_common(ddr_id, game_version, idx):
+    profile = get_db().table('ddr_profile').get(
+        where('ddr_id') == ddr_id
+    )
+    return profile['version'].get(str(game_version), None)['common'].split(',')[idx]
 
 @router.post('/{gameinfo}/playerdata_2/usergamedata_advanced')
 async def usergamedata_advanced(request: Request):
@@ -290,6 +295,25 @@ async def usergamedata_advanced(request: Request):
                 & (where('difficulty') == difficulty)
             )
 
+            wr = db.table('ddr_scores_wr').get(
+                (where('game_version') == game_version)
+                & (where('mcode') == mcode)
+                & (where('difficulty') == difficulty)
+            )
+            wr = {} if wr is None else wr
+
+            if best_score_data.get('score', 0) > wr.get('score', 0):
+                wr_score_data = best_score_data
+
+                wr_score_data['ghostid'] = ghostid.doc_id
+
+                db.table('ddr_scores_wr').upsert(
+                    wr_score_data,
+                    (where('game_version') == game_version)
+                    & (where('mcode') == mcode)
+                    & (where('difficulty') == difficulty)
+                )
+
         response = E.response(
             E.playerdata_2(
                 E.result(0, __type="s32"),
@@ -305,11 +329,48 @@ async def usergamedata_advanced(request: Request):
         )
 
     if mode == 'rivalload':
-        response = E.response(
-            E.playerdata_2(
-                E.result(0, __type="s32"),
+        shoparea = request_info['root'][0].find('data/shoparea').text
+        loadflag = int(request_info['root'][0].find('data/loadflag').text)
+        ddrcode = int(request_info['root'][0].find('data/ddrcode').text)
+        pcbid = request_info['root'][0].find('data/pcbid').text
+
+        world_record = []
+        for record in db.table('ddr_scores_wr'):
+            world_record.append(record)
+
+        if loadflag in (1, 2, 4):
+            load = []
+            for r in world_record:
+                record = [
+                    r['mcode'], 
+                    r['difficulty'],
+                    r['rank'],
+                    r['lamp'],
+                    get_common(r['ddr_id'], game_version, 27),
+                    int(get_common(r['ddr_id'], game_version, 3), 16),
+                    r['ddr_id'],
+                    r['score'],
+                    r['ghostid'],
+                ]
+                load.append(b64encode(str.encode(','.join(str(x) for x in record))).decode())
+
+            response = E.response(
+                E.playerdata_2(
+                    E.result(0, __type="s32"),
+                    E.data(
+                        *[E.record(
+                            E.record_csv(s, __type="str"),
+                        ) for s in load]
+                    )
+                )
             )
-        )
+
+        else:
+            response = E.response(
+                E.playerdata_2(
+                    E.result(0, __type="s32"),
+                )
+            )
 
     if mode == 'ghostload':
         ghostid = int(request_info['root'][0].find('data/ghostid').text)
