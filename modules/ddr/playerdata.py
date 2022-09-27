@@ -115,7 +115,7 @@ async def usergamedata_advanced(request: Request):
                     E.reward(0, __type="u32"),
                     E.comptime(1, __type="s32"),
                     E.savedata(0, __type="s64"),
-                ) for event in [e for e in range(1, 100) if e not in [2, 4, 6, 7, 8, 14]]],
+                ) for event in [e for e in range(1, 100) if e not in [4, 6, 7, 8, 14, 47]]],
                 E.grade(
                     E.single_grade(0, __type="u32"),
                     E.double_grade(0, __type="u32"),
@@ -363,6 +363,7 @@ async def usergamedata_recv(request: Request):
         common = profile['common'].split(',')
         common[5] = calories_disp.index(profile['calories_disp'])
         common[6] = character.index(profile['character'])
+        common[9] = 1 # Mobile link
         common_load = ",".join([str(i) for i in common])
 
         option = profile['option'].split(',')
