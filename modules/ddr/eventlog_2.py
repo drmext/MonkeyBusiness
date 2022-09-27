@@ -15,7 +15,7 @@ async def eventlog_2_write(request: Request):
     response = E.response(
         E.eventlog_2(
             E.gamesession(9999999, __type="s64"),
-            E.logsendflg(1 if config.maintenance_mode else 0, __type="s32"),
+            E.logsendflg(1, __type="s32"),
             E.logerrlevel(0, __type="s32"),
             E.evtidnosendflg(0, __type="s32"),
         )
