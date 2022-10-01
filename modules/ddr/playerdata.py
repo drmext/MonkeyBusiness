@@ -82,9 +82,14 @@ async def usergamedata_advanced(request: Request):
         )
 
     if mode == 'userload':
+        single_grade = 0
+        double_grade = 0
         all_scores = {}
         if all_profiles_for_card is not None:
             ddr_id = all_profiles_for_card['ddr_id']
+            profile = get_game_profile(refid, game_version)
+            single_grade = profile.get('single_grade', 0)
+            double_grade = profile.get('double_grade', 0)
             for record in db.table('ddr_scores_best').search(where('game_version') == game_version):
                 mcode = str(record['mcode'])
                 if mcode not in all_scores.keys():
@@ -128,8 +133,8 @@ async def usergamedata_advanced(request: Request):
                     E.savedata(0, __type="s64"),
                 ) for event in [e for e in range(1, 100) if e not in [4, 6, 7, 8, 14, 47]]],
                 E.grade(
-                    E.single_grade(0, __type="u32"),
-                    E.double_grade(0, __type="u32"),
+                    E.single_grade(single_grade, __type="u32"),
+                    E.double_grade(double_grade, __type="u32"),
                 ),
                 E.golden_league(
                     E.league_class(0, __type="s32"),
@@ -173,11 +178,12 @@ async def usergamedata_advanced(request: Request):
         timestamp = time.time()
 
         data = request_info['root'][0].find('data')
+        
+        ddr_id = int(data.find('ddrcode').text)
+        playstyle = int(data.find('playstyle').text)
+        note = data.findall('note')
 
-        if not int(data.find('isgameover').text) == 1:
-            ddr_id = int(data.find('ddrcode').text)
-            playstyle = int(data.find('playstyle').text)
-            note = data.findall('note')
+        if int(data.find('isgameover').text) == 0:
             for n in note:
                 if int(n.find('stagenum').text) != 0:
                     mcode = int(n.find('mcode').text)
@@ -319,6 +325,25 @@ async def usergamedata_advanced(request: Request):
                     & (where('mcode') == mcode)
                     & (where('difficulty') == difficulty)
                 )
+
+        # workaround to save the correct dan grade by using the course mcode
+        # because omnimix force unlocks all dan courses with <grade __type="u8">1</grade> in coursedb.xml 
+        elif int(data.find('isgameover').text) == 1:
+            n = note[0]
+            profile = get_profile(refid)
+            game_profile = profile['version'].get(str(game_version), {})
+            mcode = int(n.find('mcode').text)
+            if int(n.find('clearkind').text) != 1:
+                for idx, d in enumerate(range(1000, 1011), start=1):
+                    if playstyle == 0:
+                        if mcode in (d, d + 11):
+                            game_profile['single_grade'] = max(idx, game_profile.get('single_grade', idx))
+                    elif playstyle == 1:
+                        if mcode in (d + 1000, d + 1000 + 11):
+                            game_profile['double_grade'] = max(idx, game_profile.get('double_grade', idx))
+
+            profile['version'][str(game_version)] = game_profile
+            db.table('ddr_profile').upsert(profile, where('card') == refid)
 
         response = E.response(
             E.playerdata(
