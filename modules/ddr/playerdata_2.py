@@ -40,17 +40,22 @@ def get_common(ddr_id, game_version, idx):
 async def usergamedata_advanced(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info['game_version']
+    is_omni = True if request_info['rev'] == 'O' else False
     response = None
 
-    mode = request_info['root'][0].find('data/mode').text
-    refid = request_info['root'][0].find('data/refid').text
+    data = request_info['root'][0].find('data')
+    mode = data.find('mode').text
+    gamesession = data.find('gamesession').text
+    refid = data.find('refid').text
+    
+    default = 'X0000000000000000000000000000000'[:-len(gamesession)]+gamesession
 
     db = get_db()
 
     all_profiles_for_card = db.table('ddr_profile').get(Query().card == refid)
 
     if mode == 'usernew':
-        shoparea = request_info['root'][0].find('data/shoparea').text
+        shoparea = data.find('shoparea').text
 
         if 'ddr_id' not in all_profiles_for_card:
             ddr_id = random.randint(10000000, 99999999)
@@ -68,6 +73,8 @@ async def usergamedata_advanced(request: Request):
             'rival_1_ddr_id': 0,
             'rival_2_ddr_id': 0,
             'rival_3_ddr_id': 0,
+            'single_grade': 0,
+            'double_grade': 0,
         }
 
         db.table('ddr_profile').upsert(all_profiles_for_card, where('card') == refid)
@@ -81,26 +88,21 @@ async def usergamedata_advanced(request: Request):
             )
         )
 
-    if mode == 'userload':
+    elif mode == 'userload' and refid != default:
         all_scores = {}
         if all_profiles_for_card is not None:
             ddr_id = all_profiles_for_card['ddr_id']
-            for record in db.table('ddr_scores_best').search(where('game_version') == game_version):
-                mcode = str(record['mcode'])
-                if mcode not in all_scores.keys():
-                    scores = []
-                    for difficulty in range(10):
-                        s = db.table('ddr_scores_best').get(
-                            (where('ddr_id') == ddr_id)
-                            & (where('game_version') == game_version)
-                            & (where('mcode') == int(mcode))
-                            & (where('difficulty') == difficulty)
-                        )
-                        if s == None:
-                            scores.append([0, 0, 0, 0, 0])
-                        else:
-                            scores.append([1, s['rank'], s['lamp'], s['score'], s['ghostid']])
-                    all_scores[mcode] = scores
+            profile = get_game_profile(refid, game_version)
+
+            single_grade = profile.get('single_grade', 0)
+            double_grade = profile.get('double_grade', 0)
+
+            for record in db.table('ddr_scores_best').search((where('game_version') == game_version)& (where('ddr_id') == ddr_id)):
+                mcode = record['mcode']
+                difficulty = record['difficulty']
+                if mcode not in all_scores:
+                    all_scores[mcode] = [[0, 0, 0, 0, 0] for x in range(10)]
+                all_scores[mcode][difficulty] = ([1, record['rank'], record['lamp'], record['score'], record['ghostid']])
 
         response = E.response(
             E.playerdata_2(
@@ -128,8 +130,8 @@ async def usergamedata_advanced(request: Request):
                     E.savedata(0, __type="s64"),
                 ) for event in [e for e in range(1, 100) if e not in [4, 6, 7, 8, 14, 47]]],
                 E.grade(
-                    E.single_grade(0, __type="u32"),
-                    E.double_grade(0, __type="u32"),
+                    E.single_grade(single_grade, __type="u32"),
+                    E.double_grade(double_grade, __type="u32"),
                 ),
                 E.golden_league(
                     E.league_class(0, __type="s32"),
@@ -169,15 +171,34 @@ async def usergamedata_advanced(request: Request):
             )
         )
 
-    if mode == 'usersave':
+    elif mode == 'ghostload':
+        ghostid = int(data.find('ghostid').text)
+        record = db.table('ddr_scores').get(doc_id=ghostid)
+
+        response = E.response(
+            E.playerdata_2(
+                E.result(0, __type="s32"),
+                E.ghostdata(
+                    E.code(record['ddr_id'], __type="s32"),
+                    E.mcode(record['mcode'], __type="u32"),
+                    E.notetype(record['difficulty'], __type="u8"),
+                    E.ghostsize(record['ghostsize'], __type="s32"),
+                    E.ghost(record['ghost'], __type="string"),
+                )
+            )
+        )
+
+    elif mode == 'usersave' and refid != default:
         timestamp = time.time()
+        
+        ddr_id = int(data.find('ddrcode').text)
+        playstyle = int(data.find('playstyle').text)
+        pcbid = data.find('pcbid').text
+        shoparea = data.find('shoparea').text
 
-        data = request_info['root'][0].find('data')
+        note = data.findall('note')
 
-        if not int(data.find('isgameover').text) == 1:
-            ddr_id = int(data.find('ddrcode').text)
-            playstyle = int(data.find('playstyle').text)
-            note = data.findall('note')
+        if int(data.find('isgameover').text) == 0:
             for n in note:
                 if int(n.find('stagenum').text) != 0:
                     mcode = int(n.find('mcode').text)
@@ -221,6 +242,8 @@ async def usergamedata_advanced(request: Request):
             db.table('ddr_scores').insert(
                 {
                     'timestamp': timestamp,
+                    'pcbid': pcbid,
+                    'shoparea': shoparea,
                     'game_version': game_version,
                     'ddr_id': ddr_id,
                     'playstyle': playstyle,
@@ -301,49 +324,120 @@ async def usergamedata_advanced(request: Request):
                 & (where('difficulty') == difficulty)
             )
 
-            wr = db.table('ddr_scores_wr').get(
+        elif int(data.find('isgameover').text) == 1:
+            single_grade = int(data.find('grade/single_grade').text)
+            double_grade = int(data.find('grade/double_grade').text)
+            profile = get_profile(refid)
+            game_profile = profile['version'].get(str(game_version), {})
+            # workaround to save the correct dan grade by using the course mcode
+            # because omnimix force unlocks all dan courses with <grade __type="u8">1</grade> in coursedb.xml 
+            if is_omni:
+                n = note[0]
+                mcode = int(n.find('mcode').text)
+                if int(n.find('clearkind').text) != 1:
+                    for grade, course_id in enumerate(range(1000, 1011), start=1):
+                        if playstyle == 0 and mcode in (course_id, course_id + 11):
+                            single_grade = grade
+                        elif playstyle == 1 and mcode in (course_id + 1000, course_id + 1000 + 11):
+                            double_grade = grade
+
+            game_profile['single_grade'] = max(single_grade, game_profile.get('single_grade', single_grade))
+            game_profile['double_grade'] = max(double_grade, game_profile.get('double_grade', double_grade))
+
+            profile['version'][str(game_version)] = game_profile
+            db.table('ddr_profile').upsert(profile, where('card') == refid)
+
+        response = E.response(
+            E.playerdata_2(
+                E.result(0, __type="s32"),
+            )
+        )
+
+    elif mode == 'rivalload':
+        loadflag = int(data.find('loadflag').text)
+        ddrcode = int(data.find('ddrcode').text)
+        pcbid = data.find('pcbid').text
+        shoparea = data.find('shoparea').text
+
+        if loadflag == 1:
+            all_scores = {}
+            for record in db.table('ddr_scores').search(
                 (where('game_version') == game_version)
-                & (where('mcode') == mcode)
-                & (where('difficulty') == difficulty)
-            )
-            wr = {} if wr is None else wr
+                & (where('pcbid') == pcbid)
+                & (where('ddr_id') != 0)
+            ):
+                ddr_id = record['ddr_id']
+                playstyle = record['playstyle']
+                mcode = record['mcode']
+                difficulty = record['difficulty']
+                score = record['score']
 
-            if best_score_data.get('score', 0) > wr.get('score', 0):
-                wr_score_data = best_score_data
+                if (playstyle, mcode, difficulty) not in all_scores or score > all_scores[(playstyle, mcode, difficulty)].get("score"):
+                    all_scores[playstyle, mcode, difficulty] = {
+                        'game_version': game_version,
+                        'ddr_id': ddr_id,
+                        'playstyle': playstyle,
+                        'mcode': mcode,
+                        'difficulty': difficulty,
+                        'rank': record['rank'],
+                        'lamp': record['lamp'],
+                        'score': score,
+                        'exscore': record['exscore'],
+                        'ghostid': record.doc_id
+                        }
+            scores = list(all_scores.values())
 
-                wr_score_data['ghostid'] = ghostid.doc_id
+        elif loadflag == 2:
+            all_scores = {}
+            for record in db.table('ddr_scores').search(
+                (where('game_version') == game_version)
+                & (where('shoparea') == shoparea)
+                & (where('ddr_id') != 0)
+            ):
+                ddr_id = record['ddr_id']
+                playstyle = record['playstyle']
+                mcode = record['mcode']
+                difficulty = record['difficulty']
+                score = record['score']
 
-                db.table('ddr_scores_wr').upsert(
-                    wr_score_data,
-                    (where('game_version') == game_version)
-                    & (where('mcode') == mcode)
-                    & (where('difficulty') == difficulty)
-                )
+                if (playstyle, mcode, difficulty) not in all_scores or score > all_scores[(playstyle, mcode, difficulty)].get("score"):
+                    all_scores[playstyle, mcode, difficulty] = {
+                        'game_version': game_version,
+                        'ddr_id': ddr_id,
+                        'playstyle': playstyle,
+                        'mcode': mcode,
+                        'difficulty': difficulty,
+                        'rank': record['rank'],
+                        'lamp': record['lamp'],
+                        'score': score,
+                        'exscore': record['exscore'],
+                        'ghostid': record.doc_id
+                        }
+            scores = list(all_scores.values())
 
-        response = E.response(
-            E.playerdata_2(
-                E.result(0, __type="s32"),
-            )
-        )
+        elif loadflag == 4:
+            all_scores = {}
+            for record in db.table('ddr_scores').search((where('game_version') == game_version) & (where('ddr_id') != 0)):
+                ddr_id = record['ddr_id']
+                playstyle = record['playstyle']
+                mcode = record['mcode']
+                difficulty = record['difficulty']
+                score = record['score']
 
-    if mode == 'inheritance':
-        response = E.response(
-            E.playerdata_2(
-                E.result(0, __type="s32"),
-                E.InheritanceStatus(1, __type="s32"),
-            )
-        )
-
-    if mode == 'rivalload':
-        shoparea = request_info['root'][0].find('data/shoparea').text
-        loadflag = int(request_info['root'][0].find('data/loadflag').text)
-        ddrcode = int(request_info['root'][0].find('data/ddrcode').text)
-        pcbid = request_info['root'][0].find('data/pcbid').text
-
-        if loadflag in (1, 2, 4):
-            scores = []
-            for s in db.table('ddr_scores_wr'):
-                scores.append(s)
+                if (playstyle, mcode, difficulty) not in all_scores or score > all_scores[(playstyle, mcode, difficulty)].get("score"):
+                    all_scores[playstyle, mcode, difficulty] = {
+                        'game_version': game_version,
+                        'ddr_id': ddr_id,
+                        'playstyle': playstyle,
+                        'mcode': mcode,
+                        'difficulty': difficulty,
+                        'rank': record['rank'],
+                        'lamp': record['lamp'],
+                        'score': score,
+                        'exscore': record['exscore'],
+                        'ghostid': record.doc_id
+                        }
+            scores = list(all_scores.values())
 
         elif loadflag in (8, 16, 32):
             scores = []
@@ -376,20 +470,18 @@ async def usergamedata_advanced(request: Request):
             )
         )
 
-    if mode == 'ghostload':
-        ghostid = int(request_info['root'][0].find('data/ghostid').text)
-        record = db.table('ddr_scores').get(doc_id=ghostid)
-
+    elif mode == 'inheritance':
         response = E.response(
             E.playerdata_2(
                 E.result(0, __type="s32"),
-                E.ghostdata(
-                    E.code(record['ddr_id'], __type="s32"),
-                    E.mcode(record['mcode'], __type="u32"),
-                    E.notetype(record['difficulty'], __type="u8"),
-                    E.ghostsize(record['ghostsize'], __type="s32"),
-                    E.ghost(record['ghost'], __type="string"),
-                )
+                E.InheritanceStatus(1, __type="s32"),
+            )
+        )
+
+    else:
+        response = E.response(
+            E.playerdata(
+                E.result(1, __type="s32"),
             )
         )
 
