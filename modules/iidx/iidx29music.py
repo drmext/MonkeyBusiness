@@ -35,7 +35,7 @@ async def iidx29music_getrank(request: Request):
     all_scores = {}
     db = get_db()
     for record in db.table('iidx_scores_best').search(
-            (where('game_version') == game_version)
+            (where('music_id') < (game_version + 1) * 1000)
             & (where('iidx_id') == iidxid)
             & (where('play_style') == play_style)
     ):
@@ -84,7 +84,7 @@ async def iidx29music_crate(request: Request):
 
     db = get_db()
     all_score_stats = db.table('iidx_score_stats').search(
-        (where('game_version') == game_version)
+        (where('music_id') < (game_version + 1) * 1000)
     )
 
     crate = {}
@@ -174,13 +174,21 @@ async def iidx29music_reg(request: Request):
 
     best_score = db.table('iidx_scores_best').get(
         (where('iidx_id') == iidx_id)
-        & (where('game_version') == game_version)
         & (where('play_style') == play_style)
         & (where('music_id') == music_id)
         & (where('chart_id') == note_id)
     )
     best_score = {} if best_score is None else best_score
 
+    if clear_flg < ClearFlags.EASY_CLEAR:
+        miss_num = -1
+    best_miss_count = best_score.get('miss_count', miss_num)
+    if best_miss_count == -1:
+        miss_count = max(miss_num, best_miss_count)
+    elif clear_flg > ClearFlags.ASSIST_CLEAR:
+        miss_count = min(miss_num, best_miss_count)
+    else:
+        miss_count = best_miss_count
     best_ex_score = best_score.get('ex_score', ex_score)
     best_score_data = {
         'game_version': game_version,
@@ -189,7 +197,7 @@ async def iidx29music_reg(request: Request):
         'play_style': play_style,
         'music_id': music_id,
         'chart_id': note_id,
-        'miss_count': min(miss_num, best_score.get('miss_count', miss_num)),
+        'miss_count': miss_count,
         'ex_score': max(ex_score, best_ex_score),
         'ghost': ghost if ex_score >= best_ex_score else best_score.get('ghost', ghost),
         'ghost_gauge': ghost_gauge if ex_score >= best_ex_score else best_score.get('ghost_gauge', ghost_gauge),
@@ -200,15 +208,13 @@ async def iidx29music_reg(request: Request):
     db.table('iidx_scores_best').upsert(
         best_score_data,
         (where('iidx_id') == iidx_id)
-        & (where('game_version') == game_version)
         & (where('play_style') == play_style)
         & (where('music_id') == music_id)
         & (where('chart_id') == note_id)
     )
 
     score_stats = db.table('iidx_score_stats').get(
-        (where('game_version') == game_version)
-        & (where('music_id') == music_id)
+        (where('music_id') == music_id)
         & (where('play_style') == play_style)
         & (where('chart_id') == note_id)
     )
@@ -226,16 +232,14 @@ async def iidx29music_reg(request: Request):
 
     db.table('iidx_score_stats').upsert(
         score_stats,
-        (where('game_version') == game_version)
-        & (where('music_id') == music_id)
+        (where('music_id') == music_id)
         & (where('play_style') == play_style)
         & (where('chart_id') == note_id)
     )
 
     ranklist_data = []
     ranklist_scores = db.table('iidx_scores_best').search(
-        (where('game_version') == game_version)
-        & (where('play_style') == play_style)
+        (where('play_style') == play_style)
         & (where('music_id') == music_id)
         & (where('chart_id') == note_id)
     )
