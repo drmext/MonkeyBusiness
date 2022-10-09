@@ -91,16 +91,21 @@ async def iidx29music_crate(request: Request):
     fcrate = {}
     for stat in all_score_stats:
         if stat['music_id'] not in crate:
-            crate[stat['music_id']] = [[-1] * 5] * 2
+            crate[stat['music_id']] = [1001] * 10
         if stat['music_id'] not in fcrate:
-            fcrate[stat['music_id']] = [[-1] * 5] * 2
+            fcrate[stat['music_id']] = [1001] * 10
 
-        crate[stat['music_id']][stat['play_style']][stat['chart_id']] = int(stat['clear_rate'])
-        fcrate[stat['music_id']][stat['play_style']][stat['chart_id']] = int(stat['fc_rate'])
+        if stat['play_style'] == 1:
+            dp_idx = 5
+        else:
+            dp_idx = 0
+
+        crate[stat['music_id']][stat['chart_id'] + dp_idx] = int(stat['clear_rate'])
+        fcrate[stat['music_id']][stat['chart_id'] + dp_idx] = int(stat['fc_rate'])
 
     response = E.response(
         E.IIDX29music(
-            *[E.c(crate[k][0] + crate[k][1] + fcrate[k][0] + fcrate[k][1], mid=k, __type="s32") for k in crate]
+            *[E.c(crate[k] + fcrate[k], mid=k, __type="s32") for k in crate]
         )
     )
 
@@ -118,6 +123,7 @@ async def iidx29music_reg(request: Request):
     log = request_info['root'][0].find('music_play_log')
 
     clear_flg = int(request_info['root'][0].attrib['cflg'])
+    clid = int(request_info['root'][0].attrib['clid'])
     is_death = int(request_info['root'][0].attrib['is_death'])
     pid = int(request_info['root'][0].attrib['pid'])
 
@@ -298,7 +304,7 @@ async def iidx29music_reg(request: Request):
             E.shopdata(
                 rank=myRank
             ),
-            clid=note_id,
+            clid=clid,
             crate=score_stats['clear_rate'],
             frate=score_stats['fc_rate'],
             mid=music_id,
