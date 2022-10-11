@@ -13,8 +13,10 @@ Edit services url and enable url_slash
 
 
 ## Playable Games:
-- `DDR A20 PLUS`
-- `DDR A3`
-- `IIDX 20 tricoro`
-- `IIDX 29 CastHour`
-- `SDVX 6 Exceed Gear`
+- DDR A20 PLUS
+- DDR A3
+- IIDX 18 Resort Anthem
+- IIDX 19 Lincle
+- IIDX 20 tricoro
+- IIDX 29 CastHour
+- SDVX 6 Exceed Gear

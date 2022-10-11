@@ -52,12 +52,16 @@ async def core_get_game_version_from_software_version(software_version):
 
     if model == 'LDJ' and ext >= 2021101300:
         return 29
+    elif model == 'JDZ' and ext == 2011071200:
+        return 18
+    elif model == 'KDZ' and ext == 2012090300:
+        return 19
+    elif model == 'LDJ' and ext == 2013090900:
+        return 20
     elif model == 'MDX' and ext >= 2019022600:
         return 19
     elif model == 'KFC' and ext >= 2020090402:
         return 6
-    elif model == 'LDJ' and ext == 2013090900:
-        return 20
     else:
         return 0
 

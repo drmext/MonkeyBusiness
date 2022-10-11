@@ -10,7 +10,7 @@ from core_database import get_db
 import config
 
 router = APIRouter(prefix='/local', tags=['local'])
-router.model_whitelist = ['LDJ']
+router.model_whitelist = ['LDJ', 'KDZ', 'JDZ']
 
 
 class ClearFlags(IntEnum):
@@ -41,6 +41,11 @@ async def music_getrank(request: Request):
     ):
         music_id = record['music_id']
         clear_flg = record['clear_flg']
+        if game_version < 20:
+            m = str(music_id)
+            music_id = int(''.join([m[:len(m)-3], m[-2:]]))
+            if clear_flg == ClearFlags.FULL_COMBO and game_version < 19:
+                clear_flg = 6
         ex_score = record['ex_score']
         miss_count = record['miss_count']
         cid = record['chart_id']
@@ -91,6 +96,10 @@ async def music_crate(request: Request):
     crate = {}
     fcrate = {}
     for stat in all_score_stats:
+        if game_version < 20:
+            m = str(stat['music_id'])
+            stat['music_id'] = int(''.join([m[:len(m)-3], m[-2:]]))
+
         if stat['music_id'] not in crate:
             crate[stat['music_id']] = [101] * 6
         if stat['music_id'] not in fcrate:
@@ -127,12 +136,20 @@ async def music_reg(request: Request):
     clid = int(root.attrib['clid'])
     great_num = int(root.attrib['gnum'])
     iidx_id = int(root.attrib['iidxid'])
-    is_death = int(root.attrib['is_death'])
-    music_id = int(root.attrib['mid'])
     miss_num = int(root.attrib['mnum'])
     pgreat_num = int(root.attrib['pgnum'])
     pid = int(root.attrib['pid'])
     ex_score = (pgreat_num * 2) + great_num
+    if game_version == 20:
+        is_death = int(root.attrib['is_death'])
+        music_id = int(root.attrib['mid'])
+    else:
+        is_death = 1 if clear_flg < ClearFlags.ASSIST_CLEAR else 0
+        m = str(root.attrib['mid'])
+        music_id = int('0'.join([m[:len(m)-2], m[-2:]]))
+        if clear_flg == 6 and game_version < 19:
+            clear_flg = ClearFlags.FULL_COMBO
+
     if clid < 3:
         note_id = clid + 1
         play_style = 0
@@ -249,11 +266,11 @@ async def music_reg(request: Request):
             'opname': config.arcade,
             'name': game_profile['djname'],
             'pid': game_profile['region'],
-            'body': game_profile['body'],
-            'face': game_profile['face'],
-            'hair': game_profile['hair'],
-            'hand': game_profile['hand'],
-            'head': game_profile['head'],
+            'body': game_profile.get('body', 0),
+            'face': game_profile.get('face', 0),
+            'hair': game_profile.get('hair', 0),
+            'hand': game_profile.get('hand', 0),
+            'head': game_profile.get('head', 0),
             'dgrade': game_profile['grade_double'],
             'sgrade': game_profile['grade_single'],
             'score': score['ex_score'],

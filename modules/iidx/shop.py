@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Response
 from core_common import core_process_request, core_prepare_response, E
 
 router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ"]
+router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
 
 
 @router.post('/{gameinfo}/shop/getname')

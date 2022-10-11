@@ -12,6 +12,8 @@ def get_target_table(game_id):
         "LDJ": "iidx_profile",
         "MDX": "ddr_profile",
         "KFC": "sdvx_profile",
+        "JDZ": "iidx_profile",
+        "KDZ": "iidx_profile",
     }
 
     return target_table[game_id]
