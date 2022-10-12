@@ -34,19 +34,44 @@ async def iidx29music_getrank(request: Request):
 
     all_scores = {}
     db = get_db()
+
+    profile = db.table('iidx_profile').get(where('iidx_id') == iidxid)['version'][str(game_version)]
+
+    if play_style == 0:
+        rivals = [
+            profile.get("sp_rival_1_iidx_id", 0),
+            profile.get("sp_rival_2_iidx_id", 0),
+            profile.get("sp_rival_3_iidx_id", 0),
+            profile.get("sp_rival_4_iidx_id", 0),
+            profile.get("sp_rival_5_iidx_id", 0),
+        ]
+    elif play_style == 1:
+        rivals = [
+            profile.get("dp_rival_1_iidx_id", 0),
+            profile.get("dp_rival_2_iidx_id", 0),
+            profile.get("dp_rival_3_iidx_id", 0),
+            profile.get("dp_rival_4_iidx_id", 0),
+            profile.get("dp_rival_5_iidx_id", 0),
+        ]
+
     for record in db.table('iidx_scores_best').search(
             (where('music_id') < (game_version + 1) * 1000)
-            & (where('iidx_id') == iidxid)
             & (where('play_style') == play_style)
     ):
+        if record['iidx_id'] == iidxid:
+            rival_idx = -1
+        elif record['iidx_id'] in rivals:
+            rival_idx = rivals.index(record['iidx_id'])
+        else:
+            continue
         music_id = record['music_id']
         clear_flg = record['clear_flg']
         ex_score = record['ex_score']
         miss_count = record['miss_count']
         chart_id = record['chart_id']
 
-        if music_id not in all_scores:
-            all_scores[music_id] = {
+        if (rival_idx, music_id) not in all_scores:
+            all_scores[rival_idx, music_id] = {
                 0: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
                 1: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
                 2: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
@@ -54,20 +79,57 @@ async def iidx29music_getrank(request: Request):
                 4: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
             }
 
-        all_scores[music_id][chart_id]['clear_flg'] = clear_flg
-        all_scores[music_id][chart_id]['ex_score'] = ex_score
-        all_scores[music_id][chart_id]['miss_count'] = miss_count
+        all_scores[rival_idx, music_id][chart_id]['clear_flg'] = clear_flg
+        all_scores[rival_idx, music_id][chart_id]['ex_score'] = ex_score
+        all_scores[rival_idx, music_id][chart_id]['miss_count'] = miss_count
+
+    top_scores = {}
+    for record in db.table('iidx_scores_best').search(
+            (where('music_id') < (game_version + 1) * 1000)
+            & (where('play_style') == play_style)
+    ):
+        music_id = record['music_id']
+        ex_score = record['ex_score']
+        chart_id = record['chart_id']
+        iidx_id = record['iidx_id']
+
+        if music_id not in top_scores:
+            top_scores[music_id] = {
+                0: {'djname': "", 'clear_flg': -1, 'ex_score': -1},
+                1: {'djname': "", 'clear_flg': -1, 'ex_score': -1},
+                2: {'djname': "", 'clear_flg': -1, 'ex_score': -1},
+                3: {'djname': "", 'clear_flg': -1, 'ex_score': -1},
+                4: {'djname': "", 'clear_flg': -1, 'ex_score': -1},
+            }
+
+        if ex_score > top_scores[music_id][chart_id]['ex_score']:
+            top_name = db.table('iidx_profile').get(where('iidx_id') == iidx_id)['version'][str(game_version)]['djname']
+            top_scores[music_id][chart_id]['djname'] = top_name
+            top_scores[music_id][chart_id]['clear_flg'] = 1
+            top_scores[music_id][chart_id]['ex_score'] = ex_score
 
     response = E.response(
         E.IIDX29music(
             E.style(type=play_style),
             *[E.m([
-                -1,
+                i,
                 k,
-                *[all_scores[k][d]['clear_flg'] for d in range(5)],
-                *[all_scores[k][d]['ex_score'] for d in range(5)],
-                *[all_scores[k][d]['miss_count'] for d in range(5)],
-            ], __type='s16') for k in all_scores]
+                *[all_scores[i, k][d]['clear_flg'] for d in range(5)],
+                *[all_scores[i, k][d]['ex_score'] for d in range(5)],
+                *[all_scores[i, k][d]['miss_count'] for d in range(5)],
+            ], __type='s16') for i, k in all_scores],
+            *[E.top(
+                E.detail([
+                    k,
+                    *[top_scores[k][d]['clear_flg'] for d in range(5)],
+                    *[top_scores[k][d]['ex_score'] for d in range(5)],
+                ], __type='s16'),
+            name0=top_scores[k][0]['djname'],
+            name1=top_scores[k][1]['djname'],
+            name2=top_scores[k][2]['djname'],
+            name3=top_scores[k][3]['djname'],
+            name4=top_scores[k][4]['djname']
+            ) for k in top_scores]
         )
     )
 
@@ -323,9 +385,14 @@ async def iidx29music_reg(request: Request):
 async def iidx29music_appoint(request: Request):
     request_info = await core_process_request(request)
 
-    iidxid = int(request_info['root'][0].attrib['iidxid'])
-    music_id = int(request_info['root'][0].attrib['mid'])
-    chart_id = int(request_info['root'][0].attrib['clid'])
+    root = request_info['root'][0]
+
+    iidxid = int(root.attrib['iidxid'])
+    music_id = int(root.attrib['mid'])
+    chart_id = int(root.attrib['clid'])
+    ctype = int(root.attrib['ctype'])
+    subtype = root.attrib['subtype']
+    
 
     db = get_db()
     record = db.table('iidx_scores_best').get(
@@ -342,6 +409,44 @@ async def iidx29music_appoint(request: Request):
             __type="bin",
             __size=len(record['ghost']) // 2,
         ))
+
+    if ctype == 1:
+        sdata = db.table('iidx_scores_best').get(
+            (where('iidx_id') == int(subtype))
+            & (where('music_id') == music_id)
+            & (where('chart_id') == chart_id)
+        )
+    elif ctype in (2, 4, 10):
+        sdata = {
+            'game_version': 29,
+            'ghost': "",
+            'ex_score': 0,
+            'iidx_id': 0,
+            'name': "",
+            'pid': 13
+        }
+
+        for record in db.table('iidx_scores_best').search(
+            (where('music_id') == music_id)
+            & (where('chart_id') == chart_id)
+        ):
+            if record['ex_score'] > sdata['ex_score']:
+                sdata['game_version'] = record['game_version']
+                sdata['ghost'] = record['ghost']
+                sdata['ex_score'] = record['ex_score']
+                sdata['iidx_id'] = record['iidx_id']
+                sdata['pid'] = record['pid']
+
+    if ctype in (1, 2, 4, 10) and sdata['ex_score'] != 0:
+        vals.append(E.sdata(
+            sdata['ghost'],
+            score=sdata['ex_score'],
+            name=db.table('iidx_profile').get(where('iidx_id') == sdata['iidx_id'])['version'][str(sdata['game_version'])]['djname'],
+            pid=sdata['pid'],
+            __type="bin",
+            __size=len(sdata['ghost']) // 2,
+        ))
+
 
     response = E.response(
         E.IIDX29music(

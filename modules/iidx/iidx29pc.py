@@ -18,8 +18,20 @@ def get_profile(cid):
     )
 
 
+def get_profile_by_id(iidx_id):
+    return get_db().table('iidx_profile').get(
+        where('iidx_id') == iidx_id
+    )
+
+
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
+
+    return profile['version'].get(str(game_version), None)
+
+
+def get_game_profile_by_id(iidx_id, game_version):
+    profile = get_profile_by_id(iidx_id)
 
     return profile['version'].get(str(game_version), None)
 
@@ -57,6 +69,44 @@ async def iidx29pc_get(request: Request):
     cid = request_info['root'][0].attrib['cid']
     profile = get_game_profile(cid, game_version)
     djid, djid_split = get_id_from_profile(cid)
+
+    rival_ids = [
+        profile.get("sp_rival_1_iidx_id", 0),
+        profile.get("sp_rival_2_iidx_id", 0),
+        profile.get("sp_rival_3_iidx_id", 0),
+        profile.get("sp_rival_4_iidx_id", 0),
+        profile.get("sp_rival_5_iidx_id", 0),
+        profile.get("dp_rival_1_iidx_id", 0),
+        profile.get("dp_rival_2_iidx_id", 0),
+        profile.get("dp_rival_3_iidx_id", 0),
+        profile.get("dp_rival_4_iidx_id", 0),
+        profile.get("dp_rival_5_iidx_id", 0),
+    ]
+    rivals = {}
+    for idx, r in enumerate(rival_ids):
+        if r == 0:
+            continue
+        rivals[idx] = {}
+        rivals[idx]['spdp'] = 1 if idx < 5 else 2
+
+        rival_profile = get_game_profile_by_id(r, game_version)
+        rdjid = "%08d" % r
+        rdjid_split = '-'.join([rdjid[:4], rdjid[4:]])
+
+        rivals[idx]['djid'] = rdjid
+        rivals[idx]['djid_split'] = rdjid_split
+        rivals[idx]['djname'] = rival_profile['djname']
+        rivals[idx]['region'] = rival_profile['region']
+        rivals[idx]['sa'] = rival_profile['sach']
+        rivals[idx]['sg'] = rival_profile['grade_single']
+        rivals[idx]['da'] = rival_profile['dach']
+        rivals[idx]['dg'] = rival_profile['grade_double']
+        rivals[idx]['body'] = rival_profile['body']
+        rivals[idx]['face'] = rival_profile['face']
+        rivals[idx]['hair'] = rival_profile['hair']
+        rivals[idx]['hand'] = rival_profile['hand']
+        rivals[idx]['head'] = rival_profile['head']
+
 
     response = E.response(
         E.IIDX29pc(
@@ -154,7 +204,28 @@ async def iidx29pc_get(request: Request):
                     profile["kokokara_start"],
                 ],
                 __type="s16"),
-            E.rlist(),
+            E.rlist(
+                *[E.rival(
+                    E.is_robo(0, __type="bool"),
+                    E.shop(name=config.arcade),
+                    E.qprodata(
+                        body=rivals[r]['body'],
+                        face=rivals[r]['face'],
+                        hair=rivals[r]['hair'],
+                        hand=rivals[r]['hand'],
+                        head=rivals[r]['head'],
+                    ),
+                    da=rivals[r]['da'],
+                    dg=rivals[r]['dg'],
+                    djname=rivals[r]['djname'],
+                    id=rivals[r]['djid'],
+                    id_str=rivals[r]['djid_split'],
+                    pid=rivals[r]['region'],
+                    sa=rivals[r]['sa'],
+                    sg=rivals[r]['sg'],
+                    spdp=rivals[r]['spdp'],
+                )for r in rivals],
+            ),
             E.ir_data(),
             E.secret_course_data(),
             E.deller(deller=profile['deller'], rate=0),
@@ -850,7 +921,7 @@ async def iidx29pc_reg(request: Request):
         '_show_category_rival_winlose': 1,
         '_show_category_all_rival_play': 0,
         '_show_category_arena_winlose': 1,
-        '_show_rival_shop_info': 0,
+        '_show_rival_shop_info': 1,
         '_hide_play_count': 0,
         '_show_score_graph_cutin': 1,
         '_hide_iidx_id': 0,
@@ -860,7 +931,20 @@ async def iidx29pc_reg(request: Request):
 
         'skin_customize_flag_frame': 0,
         'skin_customize_flag_bgm': 0,
-        'skin_customize_flag_lane': 0
+        'skin_customize_flag_lane': 0,
+        
+        # Rivals
+        'sp_rival_1_iidx_id': 0,
+        'sp_rival_2_iidx_id': 0,
+        'sp_rival_3_iidx_id': 0,
+        'sp_rival_4_iidx_id': 0,
+        'sp_rival_5_iidx_id': 0,
+
+        'dp_rival_1_iidx_id': 0,
+        'dp_rival_2_iidx_id': 0,
+        'dp_rival_3_iidx_id': 0,
+        'dp_rival_4_iidx_id': 0,
+        'dp_rival_5_iidx_id': 0
     }
     db.upsert(all_profiles_for_card, where('card') == cid)
 
