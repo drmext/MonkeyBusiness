@@ -19,4 +19,5 @@ Edit services url and enable url_slash
 - IIDX 19 Lincle
 - IIDX 20 tricoro
 - IIDX 29 CastHour
+- IIDX 30 RESIDENT
 - SDVX 6 Exceed Gear

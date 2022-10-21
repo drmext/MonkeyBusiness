@@ -8,15 +8,15 @@ router = APIRouter(prefix="/local2", tags=["local2"])
 router.model_whitelist = ["LDJ"]
 
 
-@router.post('/{gameinfo}/IIDX29gameSystem/systemInfo')
-async def iidx29gamesystem_systeminfo(request: Request):
+@router.post('/{gameinfo}/IIDX30gameSystem/systemInfo')
+async def iidx30gamesystem_systeminfo(request: Request):
     request_info = await core_process_request(request)
 
     unlock = () #(28008, 28065, 28073, 28088, 28089, 29027, 29094, 29095)
     sp_dp = (0, 1)
 
     response = E.response(
-        E.IIDX29gameSystem(
+        E.IIDX30gameSystem(
             E.arena_schedule(
                 E.phase(2, __type="u8"),
                 E.start(1605784800, __type="u32"),
