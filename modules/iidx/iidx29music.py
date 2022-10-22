@@ -29,59 +29,52 @@ async def iidx29music_getrank(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info['game_version']
 
-    iidxid = int(request_info['root'][0].attrib['iidxid'])
-    play_style = int(request_info['root'][0].attrib['cltype'])
+    root = request_info['root'][0]
+
+    play_style = int(root.attrib['cltype'])
+
+    requested_ids = [
+        int(root.get('iidxid', 0)),
+        int(root.get('iidxid0', 0)),
+        int(root.get('iidxid1', 0)),
+        int(root.get('iidxid2', 0)),
+        int(root.get('iidxid3', 0)),
+        int(root.get('iidxid4', 0)),
+    ]
 
     all_scores = {}
     db = get_db()
 
-    profile = db.table('iidx_profile').get(where('iidx_id') == iidxid)['version'][str(game_version)]
-
-    if play_style == 0:
-        rivals = [
-            profile.get("sp_rival_1_iidx_id", 0),
-            profile.get("sp_rival_2_iidx_id", 0),
-            profile.get("sp_rival_3_iidx_id", 0),
-            profile.get("sp_rival_4_iidx_id", 0),
-            profile.get("sp_rival_5_iidx_id", 0),
-        ]
-    elif play_style == 1:
-        rivals = [
-            profile.get("dp_rival_1_iidx_id", 0),
-            profile.get("dp_rival_2_iidx_id", 0),
-            profile.get("dp_rival_3_iidx_id", 0),
-            profile.get("dp_rival_4_iidx_id", 0),
-            profile.get("dp_rival_5_iidx_id", 0),
-        ]
-
-    for record in db.table('iidx_scores_best').search(
-            (where('music_id') < (game_version + 1) * 1000)
-            & (where('play_style') == play_style)
-    ):
-        if record['iidx_id'] == iidxid:
-            rival_idx = -1
-        elif record['iidx_id'] in rivals:
-            rival_idx = rivals.index(record['iidx_id'])
-        else:
+    for rival_idx, iidxid in enumerate(requested_ids, -1):
+        if iidxid == 0:
             continue
-        music_id = record['music_id']
-        clear_flg = record['clear_flg']
-        ex_score = record['ex_score']
-        miss_count = record['miss_count']
-        chart_id = record['chart_id']
 
-        if (rival_idx, music_id) not in all_scores:
-            all_scores[rival_idx, music_id] = {
-                0: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
-                1: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
-                2: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
-                3: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
-                4: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
-            }
+        profile = db.table('iidx_profile').get(where('iidx_id') == iidxid)['version'][str(game_version)]
 
-        all_scores[rival_idx, music_id][chart_id]['clear_flg'] = clear_flg
-        all_scores[rival_idx, music_id][chart_id]['ex_score'] = ex_score
-        all_scores[rival_idx, music_id][chart_id]['miss_count'] = miss_count
+        for record in db.table('iidx_scores_best').search(
+                (where('music_id') < (game_version + 1) * 1000)
+                & (where('play_style') == play_style)
+                & (where('iidx_id') == iidxid)
+        ):
+
+            music_id = record['music_id']
+            clear_flg = record['clear_flg']
+            ex_score = record['ex_score']
+            miss_count = record['miss_count']
+            chart_id = record['chart_id']
+
+            if (rival_idx, music_id) not in all_scores:
+                all_scores[rival_idx, music_id] = {
+                    0: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
+                    1: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
+                    2: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
+                    3: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
+                    4: {'clear_flg': -1, 'ex_score': -1, 'miss_count': -1},
+                }
+
+            all_scores[rival_idx, music_id][chart_id]['clear_flg'] = clear_flg
+            all_scores[rival_idx, music_id][chart_id]['ex_score'] = ex_score
+            all_scores[rival_idx, music_id][chart_id]['miss_count'] = miss_count
 
     top_scores = {}
     for record in db.table('iidx_scores_best').search(

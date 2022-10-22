@@ -76,18 +76,20 @@ async def iidx30pc_get(request: Request):
         profile.get("sp_rival_3_iidx_id", 0),
         profile.get("sp_rival_4_iidx_id", 0),
         profile.get("sp_rival_5_iidx_id", 0),
+        profile.get("sp_rival_6_iidx_id", 0),
         profile.get("dp_rival_1_iidx_id", 0),
         profile.get("dp_rival_2_iidx_id", 0),
         profile.get("dp_rival_3_iidx_id", 0),
         profile.get("dp_rival_4_iidx_id", 0),
         profile.get("dp_rival_5_iidx_id", 0),
+        profile.get("dp_rival_6_iidx_id", 0),
     ]
     rivals = {}
     for idx, r in enumerate(rival_ids):
         if r == 0:
             continue
         rivals[idx] = {}
-        rivals[idx]['spdp'] = 1 if idx < 5 else 2
+        rivals[idx]['spdp'] = 1 if idx < 6 else 2
 
         rival_profile = get_game_profile_by_id(r, game_version)
         rdjid = "%08d" % r
@@ -295,15 +297,6 @@ async def iidx30pc_get(request: Request):
             E.ea_premium_course(),
             E.enable_qr_reward(),
             E.nostalgia_open(),
-            E.event_1(
-                story_prog=profile.get('event_1_story_prog', 0),
-                last_select_area=profile.get('event_1_last_select_area', 0),
-                failed_num=profile.get('event_1_failed_num', 0),
-                event_play_num=profile.get('event_1_event_play_num', 0),
-                last_select_area_id=profile.get('event_1_last_select_area_id', 0),
-                last_select_platform_type=profile.get('event_1_last_select_platform_type', 0),
-                last_select_platform_id=profile.get('event_1_last_select_platform_id', 0),
-            ),
             E.language_setting(language=profile['language_setting']),
             E.movie_agreement(agreement_version=profile['movie_agreement']),
             E.bpl_virtual(),
@@ -413,6 +406,30 @@ async def iidx30pc_get(request: Request):
                 sp_mplay=profile['stepup_sp_mplay'],
                 tips_read_list=profile['stepup_tips_read_list'],
                 total_point=profile['stepup_total_point'],
+            ),
+            E.tsujigiri(
+                total_num_sp=287,
+                total_num_dp=286
+            ),
+            E.tsujigiri_hidden_chara(
+                E.appearance_info(
+                    appearance_id=1,
+                    music_0=-1,
+                    music_1=-1,
+                    music_2=-1,
+                    chara_0=-1,
+                    chara_1=-1,
+                    chara_2=-1
+                ),
+                E.defeat(
+                    defeat_flg=0
+                ),
+                E.total_defeat(
+                    E.chara(
+                        id=0,
+                        num=0,
+                    )
+                ),
             ),
             E.skin_customize_flg(
                 skin_frame_flg=profile['skin_customize_flag_frame'],
@@ -550,6 +567,7 @@ async def iidx30pc_save(request: Request):
         'd_timing',
         'd_timing_split',
         'd_tsujigiri_disp',
+        'd_visualization',
         'dp_opt',
         'dp_opt2',
         'gpos',
@@ -578,7 +596,9 @@ async def iidx30pc_save(request: Request):
         's_sorttype',
         's_sub_gno',
         's_timing',
+        's_timing_split',
         's_tsujigiri_disp',
+        's_visualization',
         'sp_opt',
     ]:
         if k in request_info['root'][0].attrib:
@@ -932,15 +952,6 @@ async def iidx30pc_reg(request: Request):
         'lightning_setting_skin_0': 0,
         'lightning_setting_flg_skin_0': 0,
 
-        # Event_1 settings
-        'event_1_story_prog': 0,
-        'event_1_last_select_area': 0,
-        'event_1_failed_num': 0,
-        'event_1_event_play_num': 0,
-        'event_1_last_select_area_id': 0,
-        'event_1_last_select_platform_type': 0,
-        'event_1_last_select_platform_id': 0,
-
         # Web UI/Other options
         '_show_category_grade': 0,
         '_show_category_status': 1,
@@ -961,19 +972,21 @@ async def iidx30pc_reg(request: Request):
         'skin_customize_flag_frame': 0,
         'skin_customize_flag_bgm': 0,
         'skin_customize_flag_lane': 0,
-        
+
         # Rivals
         'sp_rival_1_iidx_id': 0,
         'sp_rival_2_iidx_id': 0,
         'sp_rival_3_iidx_id': 0,
         'sp_rival_4_iidx_id': 0,
         'sp_rival_5_iidx_id': 0,
+        'sp_rival_6_iidx_id': 0,
 
         'dp_rival_1_iidx_id': 0,
         'dp_rival_2_iidx_id': 0,
         'dp_rival_3_iidx_id': 0,
         'dp_rival_4_iidx_id': 0,
-        'dp_rival_5_iidx_id': 0
+        'dp_rival_5_iidx_id': 0,
+        'dp_rival_6_iidx_id': 0
     }
     db.upsert(all_profiles_for_card, where('card') == cid)
 
