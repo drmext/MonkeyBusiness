@@ -30,7 +30,7 @@ def _add_list_as_str(elm, vals):
 
     if elm is not None:
         elm.text = new_val
-        elm.attrib['__count'] = str(len(vals))
+        elm.attrib["__count"] = str(len(vals))
 
     else:
         return new_val
@@ -50,43 +50,43 @@ async def core_get_game_version_from_software_version(software_version):
     _, model, dest, spec, rev, ext = software_version
     ext = int(ext)
 
-    if model == 'LDJ' and ext >= 2022101700:
+    if model == "LDJ" and ext >= 2022101700:
         return 30
-    elif model == 'LDJ' and ext in range(2021101300, 2022101500):
+    elif model == "LDJ" and ext in range(2021101300, 2022101500):
         return 29
-    elif model == 'JDZ' and ext == 2011071200:
+    elif model == "JDZ" and ext == 2011071200:
         return 18
-    elif model == 'KDZ' and ext == 2012090300:
+    elif model == "KDZ" and ext == 2012090300:
         return 19
-    elif model == 'LDJ' and ext == 2013090900:
+    elif model == "LDJ" and ext == 2013090900:
         return 20
-    elif model == 'MDX' and ext >= 2019022600:
+    elif model == "MDX" and ext >= 2019022600:
         return 19
-    elif model == 'KFC' and ext >= 2020090402:
+    elif model == "KFC" and ext >= 2020090402:
         return 6
     else:
         return 0
 
 
 async def core_process_request(request):
-    cl = request.headers.get('Content-Length')
+    cl = request.headers.get("Content-Length")
     data = await request.body()
 
     if not cl or not data:
         return {}
 
-    if 'X-Compress' in request.headers:
-        request.compress = request.headers.get('X-Compress')
+    if "X-Compress" in request.headers:
+        request.compress = request.headers.get("X-Compress")
     else:
         request.compress = None
 
-    if 'X-Eamuse-Info' in request.headers:
-        xeamuseinfo = request.headers.get('X-Eamuse-Info')
+    if "X-Eamuse-Info" in request.headers:
+        xeamuseinfo = request.headers.get("X-Eamuse-Info")
         key = bytes.fromhex(xeamuseinfo[2:].replace("-", ""))
-        xml_dec = EamuseARC4(key).decrypt(data[:int(cl)])
+        xml_dec = EamuseARC4(key).decrypt(data[: int(cl)])
         request.is_encrypted = True
     else:
-        xml_dec = data[:int(cl)]
+        xml_dec = data[: int(cl)]
         request.is_encrypted = False
 
     if request.compress == "lz77":
@@ -101,25 +101,24 @@ async def core_process_request(request):
         print("Request:")
         print(xml_text)
 
-    model_parts = (root.attrib['model'], *root.attrib['model'].split(':'))
+    model_parts = (root.attrib["model"], *root.attrib["model"].split(":"))
     module = root[0].tag
-    method = root[0].attrib['method'] if 'method' in root[0].attrib else None
-    command = root[0].attrib['command'] if 'command' in root[0].attrib else None
+    method = root[0].attrib["method"] if "method" in root[0].attrib else None
+    command = root[0].attrib["command"] if "command" in root[0].attrib else None
     game_version = await core_get_game_version_from_software_version(model_parts)
 
     return {
-        'root': root,
-        'text': xml_text,
-        'module': module,
-        'method': method,
-        'command': command,
-
-        'model': model_parts[1],
-        'dest': model_parts[2],
-        'spec': model_parts[3],
-        'rev': model_parts[4],
-        'ext': model_parts[5],
-        'game_version': game_version,
+        "root": root,
+        "text": xml_text,
+        "module": module,
+        "method": method,
+        "command": command,
+        "model": model_parts[1],
+        "dest": model_parts[2],
+        "spec": model_parts[3],
+        "rev": model_parts[4],
+        "ext": model_parts[5],
+        "game_version": game_version,
     }
 
 
@@ -138,7 +137,7 @@ async def core_prepare_response(request, xml):
     response_headers = {"User-Agent": "EAMUSE.Httpac/1.0"}
 
     if request.is_encrypted:
-        xeamuseinfo = "1-%08x-%04x" % (int(time.time()), random.randint(0x0000, 0xffff))
+        xeamuseinfo = "1-%08x-%04x" % (int(time.time()), random.randint(0x0000, 0xFFFF))
         response_headers["X-Eamuse-Info"] = xeamuseinfo
         key = bytes.fromhex(xeamuseinfo[2:].replace("-", ""))
         response = EamuseARC4(key).encrypt(xml_binary)

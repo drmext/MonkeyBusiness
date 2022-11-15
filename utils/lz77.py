@@ -14,8 +14,8 @@ class EamuseLZ77:
                 else:
                     if offset >= data_length:
                         break
-                    lookback_flag = int.from_bytes(data[offset:offset+2], 'big')
-                    lookback_length = (lookback_flag & 0x000f) + 3
+                    lookback_flag = int.from_bytes(data[offset : offset + 2], "big")
+                    lookback_length = (lookback_flag & 0x000F) + 3
                     lookback_offset = lookback_flag >> 4
                     offset += 2
                     if lookback_flag == 0:

@@ -8,7 +8,7 @@ router = APIRouter(prefix="/local", tags=["local"])
 router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
 
 
-@router.post('/{gameinfo}/shop/getname')
+@router.post("/{gameinfo}/shop/getname")
 async def shop_getname(request: Request):
     request_info = await core_process_request(request)
 
@@ -24,7 +24,7 @@ async def shop_getname(request: Request):
     return Response(content=response_body, headers=response_headers)
 
 
-@router.post('/{gameinfo}/shop/getconvention')
+@router.post("/{gameinfo}/shop/getconvention")
 async def shop_getconvention(request: Request):
     request_info = await core_process_request(request)
 
@@ -44,26 +44,21 @@ async def shop_getconvention(request: Request):
     return Response(content=response_body, headers=response_headers)
 
 
-@router.post('/{gameinfo}/shop/sentinfo')
+@router.post("/{gameinfo}/shop/sentinfo")
 async def shop_sentinfo(request: Request):
     request_info = await core_process_request(request)
 
-    response = E.response(
-        E.shop()
-    )
+    response = E.response(E.shop())
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
 
-@router.post('/{gameinfo}/shop/sendescapepackageinfo')
+
+@router.post("/{gameinfo}/shop/sendescapepackageinfo")
 async def shop_sendescapepackageinfo(request: Request):
     request_info = await core_process_request(request)
 
-    response = E.response(
-        E.shop(
-            expire=1200
-        )
-    )
+    response = E.response(E.shop(expire=1200))
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)

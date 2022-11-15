@@ -8,8 +8,8 @@ router = APIRouter(prefix="/local2", tags=["local2"])
 router.model_whitelist = ["KFC"]
 
 
-@router.post('/{gameinfo}/eventlog/write')
-async def eventlog_write(request: Request):
+@router.post("/{gameinfo}/eventlog/write")
+async def sdvx_eventlog_write(request: Request):
     request_info = await core_process_request(request)
 
     response = E.response(

@@ -1,18 +1,21 @@
 # MonkeyBusiness
-e-amusement server using FastAPI and TinyDB
 
-for experimental testing and playing
+e-amusement server using [FastAPI](https://github.com/tiangolo/fastapi) and [TinyDB](https://github.com/msiemens/tinydb)
 
+for experimental local testing and playing
 
-## Instructions:
-`pip install -U -r requirements.txt`
+**don't host it publicly as-is**
 
-`python pyeamu.py`
+## Instructions
 
-Edit services url and enable url_slash
+1. Install [python](https://www.python.org/ftp/python/3.10.8/python-3.10.8-amd64.exe) with "Add python.exe to PATH" checked
 
+1. Run `start.bat`
 
-## Playable Games:
+1. Edit prop/ea3-config.xml
+
+## Playable Games
+
 - DDR A20 PLUS
 - DDR A3
 - IIDX 18 Resort Anthem
@@ -20,4 +23,4 @@ Edit services url and enable url_slash
 - IIDX 20 tricoro
 - IIDX 29 CastHour
 - IIDX 30 RESIDENT
-- SDVX 6 Exceed Gear
+- SDVX 6 EXCEED GEAR

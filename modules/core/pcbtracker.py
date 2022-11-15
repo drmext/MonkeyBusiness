@@ -7,7 +7,7 @@ from core_common import core_process_request, core_prepare_response, E
 router = APIRouter(prefix="/core", tags=["pcbtracker"])
 
 
-@router.post('/{gameinfo}/pcbtracker/alive')
+@router.post("/{gameinfo}/pcbtracker/alive")
 async def pcbtracker_alive(request: Request):
     request_info = await core_process_request(request)
 

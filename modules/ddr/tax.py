@@ -6,7 +6,7 @@ router = APIRouter(prefix="/local", tags=["local"])
 router.model_whitelist = ["MDX"]
 
 
-@router.post('/{gameinfo}/tax/get_phase')
+@router.post("/{gameinfo}/tax/get_phase")
 async def tax_get_phase(request: Request):
     request_info = await core_process_request(request)
 

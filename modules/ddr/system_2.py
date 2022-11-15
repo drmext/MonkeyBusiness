@@ -8,10 +8,10 @@ router = APIRouter(prefix="/local2", tags=["local2"])
 router.model_whitelist = ["MDX"]
 
 
-@router.post('/{gameinfo}/system_2/convcardnumber')
+@router.post("/{gameinfo}/system_2/convcardnumber")
 async def system_2_convcardnumber(request: Request):
     request_info = await core_process_request(request)
-    cid = request_info['root'][0].find('data/card_id').text
+    cid = request_info["root"][0].find("data/card_id").text
 
     response = E.response(
         E.system_2(

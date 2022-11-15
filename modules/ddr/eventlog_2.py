@@ -8,8 +8,8 @@ router = APIRouter(prefix="/local2", tags=["local2"])
 router.model_whitelist = ["MDX"]
 
 
-@router.post('/{gameinfo}/eventlog_2/write')
-async def eventlog_2_write(request: Request):
+@router.post("/{gameinfo}/eventlog_2/write")
+async def ddr_eventlog_2_write(request: Request):
     request_info = await core_process_request(request)
 
     response = E.response(

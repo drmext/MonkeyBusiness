@@ -7,7 +7,7 @@ from core_common import core_process_request, core_prepare_response, E
 router = APIRouter(prefix="/core", tags=["eacoin"])
 
 
-@router.post('/{gameinfo}/eacoin/checkin')
+@router.post("/{gameinfo}/eacoin/checkin")
 async def eacoin_checkin(request: Request):
     request_info = await core_process_request(request)
 
@@ -27,7 +27,7 @@ async def eacoin_checkin(request: Request):
     return Response(content=response_body, headers=response_headers)
 
 
-@router.post('/{gameinfo}/eacoin/consume')
+@router.post("/{gameinfo}/eacoin/consume")
 async def eacoin_consume(request: Request):
     request_info = await core_process_request(request)
 
@@ -43,7 +43,7 @@ async def eacoin_consume(request: Request):
     return Response(content=response_body, headers=response_headers)
 
 
-@router.post('/{gameinfo}/eacoin/getbalance')
+@router.post("/{gameinfo}/eacoin/getbalance")
 async def eacoin_getbalance(request: Request):
     request_info = await core_process_request(request)
 

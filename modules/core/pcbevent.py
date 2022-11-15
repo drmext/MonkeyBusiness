@@ -5,7 +5,7 @@ from core_common import core_process_request, core_prepare_response, E
 router = APIRouter(prefix="/core", tags=["pcbevent"])
 
 
-@router.post('/{gameinfo}/pcbevent/put')
+@router.post("/{gameinfo}/pcbevent/put")
 async def pcbevent_put(request: Request):
     request_info = await core_process_request(request)
 

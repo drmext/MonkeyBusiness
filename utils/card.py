@@ -30,14 +30,14 @@ def pack_5(data):
     data = "".join(f"{i:05b}" for i in data)
     if len(data) % 8 != 0:
         data += "0" * (8 - (len(data) % 8))
-    return bytes(int(data[i:i+8], 2) for i in range(0, len(data), 8))
+    return bytes(int(data[i : i + 8], 2) for i in range(0, len(data), 8))
 
 
 def unpack_5(data):
     data = "".join(f"{i:08b}" for i in data)
     if len(data) % 5 != 0:
         data += "0" * (5 - (len(data) % 5))
-    return bytes(int(data[i:i+5], 2) for i in range(0, len(data), 5))
+    return bytes(int(data[i : i + 5], 2) for i in range(0, len(data), 5))
 
 
 def to_konami_id(uid):
@@ -74,7 +74,9 @@ def to_uid(konami_id):
         raise ValueError("Invalid ID")
 
     assert len(konami_id) == 16, f"ID must be 16 characters"
-    assert all(i in valid_characters for i in konami_id), "ID contains invalid characters"
+    assert all(
+        i in valid_characters for i in konami_id
+    ), "ID contains invalid characters"
     card = [valid_characters.index(i) for i in konami_id]
     assert card[11] % 2 == card[12] % 2, "Parity check failed"
     assert card[13] == card[12] ^ 1, "Card invalid"
@@ -98,4 +100,6 @@ def to_uid(konami_id):
 if __name__ == "__main__":
     assert to_konami_id("0000000000000000") == "007TUT8XJNSSPN2P", "To KID failed"
     assert to_uid("007TUT8XJNSSPN2P") == "0000000000000000", "From KID failed"
-    assert to_uid(to_konami_id("000000100200F000")) == "000000100200F000", "Roundtrip failed"
+    assert (
+        to_uid(to_konami_id("000000100200F000")) == "000000100200F000"
+    ), "Roundtrip failed"
