@@ -50,20 +50,62 @@ async def core_get_game_version_from_software_version(software_version):
     _, model, dest, spec, rev, ext = software_version
     ext = int(ext)
 
-    if model == "LDJ" and ext >= 2022101700:
-        return 30
-    elif model == "LDJ" and ext in range(2021101300, 2022101500):
-        return 29
-    elif model == "JDZ" and ext == 2011071200:
+    if model == "LDJ":
+        if ext >= 2022101700:
+            return 30
+        elif ext in range(2021101300, 2022101500):
+            return 29
+        elif ext in range(2020102800, 2021100601):
+            return 28
+        elif ext in range(2019101600, 2020102201):
+            return 27
+        elif ext in range(2018110700, 2019100701):
+            return 26
+        elif ext in range(2017122100, 2018103101):
+            return 25
+        elif ext in range(2016102400, 2017082801):
+            return 24
+        elif ext in range(2015111100, 2016102001):
+            return 23
+        elif ext in range(2014091700, 2015080501):
+            return 22
+        elif ext in range(2013100200, 2014071601):
+            return 21
+        elif ext in range(2012091900, 2013090901):
+            return 20
+    elif model == "KDZ":
+        return 19
+    elif model == "JDZ":
         return 18
-    elif model == "KDZ" and ext == 2012090300:
-        return 19
-    elif model == "LDJ" and ext == 2013090900:
-        return 20
-    elif model == "MDX" and ext >= 2019022600:
-        return 19
-    elif model == "KFC" and ext >= 2020090402:
-        return 6
+
+    elif model == "M32":
+        if ext >= 2022121400:
+            return 9
+        elif ext >= 2021042100:
+            return 8
+        elif ext >= 2019100200:
+            return 7
+        elif ext >= 2018072700:
+            return 6
+        elif ext >= 2017090600:
+            return 5
+        elif ext >= 2017011800:
+            return 4
+        elif ext in range(2015042100, 2016112302):
+            return 3
+        elif ext in range(2014021400, 2015032702):
+            return 2
+        elif ext in range(2013012400, 2014011601):
+            return 1
+
+    elif model == "MDX":
+        if ext >= 2019022600:  # ???
+            return 19
+
+    elif model == "KFC":
+        if ext >= 2020090402:  # ???
+            return 6
+
     else:
         return 0
 

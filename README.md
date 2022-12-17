@@ -18,9 +18,17 @@ for experimental local testing and playing
 
 - DDR A20 PLUS
 - DDR A3
+
+- GITADORA 5 Matixx
+- GITADORA 6 EXCHAIN
+- GITADORA 7 NEX+AGE
+- GITADORA 8 HIGH-VOLTAGE
+- GITADORA 9 FUZZ-UP
+
 - IIDX 18 Resort Anthem
 - IIDX 19 Lincle
 - IIDX 20 tricoro
 - IIDX 29 CastHour
 - IIDX 30 RESIDENT
+
 - SDVX 6 EXCEED GEAR

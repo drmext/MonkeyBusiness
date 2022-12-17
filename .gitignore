@@ -1,4 +1,5 @@
 *.pyc
+mdb*.xml
 /db*.json
 /*.db
 .venv/
