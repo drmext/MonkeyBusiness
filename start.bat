@@ -2,7 +2,7 @@
 
 cd /d %~dp0
 
-if exist .venv\Lib\site-packages\six.py (
+if exist .venv\Lib\site-packages\ujson*.pyd (
   (
     .venv\Scripts\activate.bat
     python pyeamu.py
@@ -17,8 +17,8 @@ if exist .venv\Lib\site-packages\six.py (
 )
 
 echo:
-echo Install python and check "Add python.exe to PATH"
-echo https://www.python.org/ftp/python/3.10.8/python-3.10.8-amd64.exe
+echo Install python with "Add python.exe to PATH" checked
+echo https://www.python.org/ftp/python/3.11.1/python-3.11.1-amd64.exe
 echo:
 
 pause

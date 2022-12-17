@@ -2,7 +2,7 @@ from urllib.parse import urlunparse, urlencode
 
 import uvicorn
 
-import json
+import ujson as json
 from os import path
 
 from fastapi import FastAPI, Request, Response

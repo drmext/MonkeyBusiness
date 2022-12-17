@@ -11,7 +11,7 @@ import utils.card as conv
 from utils.lz77 import EamuseLZ77
 
 import lxml.etree as ET
-import json
+import ujson as json
 import struct
 from typing import Dict, List, Tuple
 from os import path

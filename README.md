@@ -8,7 +8,7 @@ for experimental local testing and playing
 
 ## Instructions
 
-1. Install [python](https://www.python.org/ftp/python/3.10.8/python-3.10.8-amd64.exe) with "Add python.exe to PATH" checked
+1. Install [python](https://www.python.org/ftp/python/3.11.1/python-3.11.1-amd64.exe) with "Add python.exe to PATH" checked
 
 1. Run `start.bat`
 
