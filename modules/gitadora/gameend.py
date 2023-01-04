@@ -32,10 +32,14 @@ async def gitadora_gameend_regist(ver: str, request: Request):
 
     root = request_info["root"][0]
 
-    player = root.find("player")
-    no = int(player.attrib["no"])
+    players = root.findall("player")
 
-    if player.attrib["card"] == "use":
+    for player in players:
+        no = int(player.attrib["no"])
+
+        if player.attrib["card"] != "use":
+            continue
+
         dataid = player.find("refid").text
         profile = get_profile(dataid)
         gitadora_id = profile["gitadora_id"]
@@ -292,7 +296,7 @@ async def gitadora_gameend_regist(ver: str, request: Request):
             )
             best_score = {} if best_score is None else best_score
 
-            best_ex_score = best_score.get("score", score)
+            best_perc = best_score.get("perc", perc)
             best_score_data = {
                 "gitadora_id": gitadora_id,
                 "musicid": musicid,
@@ -304,10 +308,10 @@ async def gitadora_gameend_regist(ver: str, request: Request):
                 "perc": max(perc, best_score.get("perc", perc)),
                 "rank": max(rank, best_score.get("rank", rank)),
                 "meter": meter
-                if score >= best_ex_score
+                if perc >= best_perc
                 else best_score.get("meter", meter),
                 "meter_prog": meter_prog
-                if score >= best_ex_score
+                if perc >= best_perc
                 else best_score.get("meter_prog", meter_prog),
             }
 
