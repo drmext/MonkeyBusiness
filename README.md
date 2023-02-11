@@ -31,4 +31,6 @@ for experimental local testing and playing
 - IIDX 29 CastHour
 - IIDX 30 RESIDENT
 
+- NOSTALGIA Op.3
+
 - SDVX 6 EXCEED GEAR

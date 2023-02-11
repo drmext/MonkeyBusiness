@@ -13,6 +13,7 @@ def get_target_table(game_id):
         "MDX": "ddr_profile",
         "KFC": "sdvx_profile",
         "M32": "gitadora_profile",
+        "PAN": "nostalgia_profile",
         "JDZ": "iidx_profile",
         "KDZ": "iidx_profile",
     }
