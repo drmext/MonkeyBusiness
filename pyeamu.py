@@ -16,6 +16,15 @@ import utils.card as conv
 
 from core_common import core_process_request, core_prepare_response, E
 
+from modules.core.pcbtracker import pcbtracker_alive
+from modules.core.message import message_get
+from modules.core.facility import facility_get
+from modules.core.package import package_list
+from modules.core.pcbevent import pcbevent_put
+from modules.core.cardmng import cardmng_inquire
+from modules.core.cardmng import cardmng_authpass
+from modules.core.cardmng import cardmng_bindmodel
+from modules.core.cardmng import cardmng_getrefid
 
 def urlpathjoin(parts, sep="/"):
     return sep + sep.join([x.lstrip(sep) for x in parts])
@@ -90,6 +99,34 @@ if __name__ == "__main__":
     print("https://github.com/drmext/MonkeyBusiness")
     print()
     uvicorn.run("pyeamu:app", host=config.ip, port=config.port, reload=True)
+
+
+@app.post(urlpathjoin([config.services_prefix]))
+async def services_get_pop(model: Request, module: str, method: str):
+
+    if module == "pcbtracker":
+        return await pcbtracker_alive(model)
+    elif module == "message":
+        return await message_get(model)
+    elif module == "facility":
+        return await facility_get(model)
+    elif module == "package":
+        return await package_list(model)
+    elif module == "pcbevent":
+        return await pcbevent_put(model)
+    elif module == "cardmng":
+        if method == "inquire":
+            return await cardmng_inquire(model)
+        elif method == "getrefid":
+            return await cardmng_getrefid(model)
+        elif method == "bindmodel":
+            return await cardmng_bindmodel(model)
+        elif method == "authpass":
+            return await cardmng_authpass(model)
+    elif module == "services":
+        services_get(model)
+    else:
+        return
 
 
 @app.post(urlpathjoin([config.services_prefix, "/{gameinfo}/services/get"]))
@@ -180,3 +217,19 @@ async def card_conv(card: str):
         uid = conv.to_uid(card)
         kid = card
     return {"uid": uid, "konami_id": kid}
+
+# TODO: Answer /local2 calls, create responses and apropriate functions to go with them
+#@app.post("/local2")
+#async def local_two(model: Request, module: str):
+#    
+#    #if module == "pcb24":
+     # Straight up broken. I was unable to translate the incoming XML,
+     # seems like part of it is missing or jumbled. It also however seems
+     # like you dont really need it? That is the conclusion for now.
+     # (And I know its compressed, still nothing useful) 
+
+#    # To be implemented
+#    if module == "player24":
+#        request_info = await core_process_request(model)
+#        return
+#    

@@ -16,6 +16,7 @@ def get_target_table(game_id):
         "PAN": "nostalgia_profile",
         "JDZ": "iidx_profile",
         "KDZ": "iidx_profile",
+        "M39": "popn_profile",
     }
 
     return target_table[game_id]
