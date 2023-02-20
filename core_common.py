@@ -108,7 +108,6 @@ async def core_get_game_version_from_software_version(software_version):
     
     elif model == "M39":
         if ext >= 2022061300:  # ???
-            print("OK!")
             return 31
 
     else:
