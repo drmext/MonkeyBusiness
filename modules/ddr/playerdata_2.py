@@ -353,7 +353,7 @@ async def usergamedata_advanced(request: Request):
                 mcode = int(n.find("mcode").text)
                 if int(n.find("clearkind").text) != 1:
                     for grade, course_id in enumerate(range(1000, 1011), start=1):
-                        if playstyle == 0 and mcode in (course_id, course_id + 11):
+                        if playstyle in (0, 2) and mcode in (course_id, course_id + 11):
                             single_grade = grade
                         elif playstyle == 1 and mcode in (
                             course_id + 1000,
@@ -391,24 +391,16 @@ async def usergamedata_advanced(request: Request):
                 & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
-                playstyle = record["playstyle"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 score = record["score"]
 
-                if (
-                    playstyle,
-                    mcode,
-                    difficulty,
-                ) not in all_scores or score > all_scores[
-                    (playstyle, mcode, difficulty)
-                ].get(
-                    "score"
-                ):
-                    all_scores[playstyle, mcode, difficulty] = {
+                if (mcode, difficulty) not in all_scores or score > all_scores[
+                    (mcode, difficulty)
+                ].get("score"):
+                    all_scores[mcode, difficulty] = {
                         "game_version": game_version,
                         "ddr_id": ddr_id,
-                        "playstyle": playstyle,
                         "mcode": mcode,
                         "difficulty": difficulty,
                         "rank": record["rank"],
@@ -427,24 +419,16 @@ async def usergamedata_advanced(request: Request):
                 & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
-                playstyle = record["playstyle"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 score = record["score"]
 
-                if (
-                    playstyle,
-                    mcode,
-                    difficulty,
-                ) not in all_scores or score > all_scores[
-                    (playstyle, mcode, difficulty)
-                ].get(
-                    "score"
-                ):
-                    all_scores[playstyle, mcode, difficulty] = {
+                if (mcode, difficulty) not in all_scores or score > all_scores[
+                    (mcode, difficulty)
+                ].get("score"):
+                    all_scores[mcode, difficulty] = {
                         "game_version": game_version,
                         "ddr_id": ddr_id,
-                        "playstyle": playstyle,
                         "mcode": mcode,
                         "difficulty": difficulty,
                         "rank": record["rank"],
@@ -461,24 +445,16 @@ async def usergamedata_advanced(request: Request):
                 (where("game_version") == game_version) & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
-                playstyle = record["playstyle"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 score = record["score"]
 
-                if (
-                    playstyle,
-                    mcode,
-                    difficulty,
-                ) not in all_scores or score > all_scores[
-                    (playstyle, mcode, difficulty)
-                ].get(
-                    "score"
-                ):
-                    all_scores[playstyle, mcode, difficulty] = {
+                if (mcode, difficulty) not in all_scores or score > all_scores[
+                    (mcode, difficulty)
+                ].get("score"):
+                    all_scores[mcode, difficulty] = {
                         "game_version": game_version,
                         "ddr_id": ddr_id,
-                        "playstyle": playstyle,
                         "mcode": mcode,
                         "difficulty": difficulty,
                         "rank": record["rank"],
@@ -495,14 +471,21 @@ async def usergamedata_advanced(request: Request):
                 scores.append(s)
 
         load = []
+        names = {}
         for r in scores:
+            if r["ddr_id"] not in names:
+                names[r["ddr_id"]] = {}
+                names[r["ddr_id"]]["name"] = get_common(r["ddr_id"], game_version, 27)
+                names[r["ddr_id"]]["area"] = int(
+                    str(get_common(r["ddr_id"], game_version, 3)), 16
+                )
             s = [
                 r["mcode"],
                 r["difficulty"],
                 r["rank"],
                 r["lamp"],
-                get_common(r["ddr_id"], game_version, 27),
-                int(get_common(r["ddr_id"], game_version, 3), 16),
+                names[r["ddr_id"]]["name"],
+                names[r["ddr_id"]]["area"],
                 r["ddr_id"],
                 r["score"],
                 r["ghostid"],

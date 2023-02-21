@@ -353,7 +353,7 @@ async def usergamedata_advanced(request: Request):
                 mcode = int(n.find("mcode").text)
                 if int(n.find("clearkind").text) != 1:
                     for grade, course_id in enumerate(range(1000, 1011), start=1):
-                        if playstyle == 0 and mcode in (course_id, course_id + 11):
+                        if playstyle in (0, 2) and mcode in (course_id, course_id + 11):
                             single_grade = grade
                         elif playstyle == 1 and mcode in (
                             course_id + 1000,
@@ -391,24 +391,16 @@ async def usergamedata_advanced(request: Request):
                 & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
-                playstyle = record["playstyle"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 score = record["score"]
 
-                if (
-                    playstyle,
-                    mcode,
-                    difficulty,
-                ) not in all_scores or score > all_scores[
-                    (playstyle, mcode, difficulty)
-                ].get(
-                    "score"
-                ):
-                    all_scores[playstyle, mcode, difficulty] = {
+                if (mcode, difficulty) not in all_scores or score > all_scores[
+                    (mcode, difficulty)
+                ].get("score"):
+                    all_scores[mcode, difficulty] = {
                         "game_version": game_version,
                         "ddr_id": ddr_id,
-                        "playstyle": playstyle,
                         "mcode": mcode,
                         "difficulty": difficulty,
                         "rank": record["rank"],
@@ -427,24 +419,16 @@ async def usergamedata_advanced(request: Request):
                 & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
-                playstyle = record["playstyle"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 score = record["score"]
 
-                if (
-                    playstyle,
-                    mcode,
-                    difficulty,
-                ) not in all_scores or score > all_scores[
-                    (playstyle, mcode, difficulty)
-                ].get(
-                    "score"
-                ):
-                    all_scores[playstyle, mcode, difficulty] = {
+                if (mcode, difficulty) not in all_scores or score > all_scores[
+                    (mcode, difficulty)
+                ].get("score"):
+                    all_scores[mcode, difficulty] = {
                         "game_version": game_version,
                         "ddr_id": ddr_id,
-                        "playstyle": playstyle,
                         "mcode": mcode,
                         "difficulty": difficulty,
                         "rank": record["rank"],
@@ -461,24 +445,16 @@ async def usergamedata_advanced(request: Request):
                 (where("game_version") == game_version) & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
-                playstyle = record["playstyle"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 score = record["score"]
 
-                if (
-                    playstyle,
-                    mcode,
-                    difficulty,
-                ) not in all_scores or score > all_scores[
-                    (playstyle, mcode, difficulty)
-                ].get(
-                    "score"
-                ):
-                    all_scores[playstyle, mcode, difficulty] = {
+                if (mcode, difficulty) not in all_scores or score > all_scores[
+                    (mcode, difficulty)
+                ].get("score"):
+                    all_scores[mcode, difficulty] = {
                         "game_version": game_version,
                         "ddr_id": ddr_id,
-                        "playstyle": playstyle,
                         "mcode": mcode,
                         "difficulty": difficulty,
                         "rank": record["rank"],
@@ -494,6 +470,29 @@ async def usergamedata_advanced(request: Request):
             for s in db.table("ddr_scores_best").search(where("ddr_id") == ddrcode):
                 scores.append(s)
 
+        load = []
+        names = {}
+        for r in scores:
+            if r["ddr_id"] not in names:
+                names[r["ddr_id"]] = {}
+                names[r["ddr_id"]]["name"] = get_common(r["ddr_id"], game_version, 27)
+                names[r["ddr_id"]]["area"] = int(
+                    str(get_common(r["ddr_id"], game_version, 3)), 16
+                )
+            load.append(
+                {
+                    "mcode": r["mcode"],
+                    "difficulty": r["difficulty"],
+                    "rank": r["rank"],
+                    "lamp": r["lamp"],
+                    "name": names[r["ddr_id"]]["name"],
+                    "area": names[r["ddr_id"]]["area"],
+                    "ddr_id": r["ddr_id"],
+                    "score": r["score"],
+                    "ghostid": r["ghostid"],
+                }
+            )
+
         response = E.response(
             E.playerdata(
                 E.result(0, __type="s32"),
@@ -506,18 +505,13 @@ async def usergamedata_advanced(request: Request):
                             E.rank(s["rank"], __type="u8"),
                             E.clearkind(s["lamp"], __type="u8"),
                             E.flagdata(0, __type="u8"),
-                            E.name(
-                                get_common(s["ddr_id"], game_version, 27), __type="str"
-                            ),
-                            E.area(
-                                int(get_common(s["ddr_id"], game_version, 3), 16),
-                                __type="s32",
-                            ),
+                            E.name(s["name"], __type="str"),
+                            E.area(s["area"], __type="s32"),
                             E.code(s["ddr_id"], __type="s32"),
                             E.score(s["score"], __type="s32"),
                             E.ghostid(s["ghostid"], __type="s32"),
                         )
-                        for s in scores
+                        for s in load
                     ],
                 ),
             )
