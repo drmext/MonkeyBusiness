@@ -12,7 +12,7 @@ for experimental local testing and playing
 
 1. Run `start.bat`
 
-1. Edit prop/ea3-config.xml
+1. Edit prop/ea3-config.xml services *url* and url_slash *1*
 
 ## Playable Games
 
@@ -34,3 +34,15 @@ for experimental local testing and playing
 - NOSTALGIA Op.3
 
 - SDVX 6 EXCEED GEAR
+
+## Troubleshooting
+
+- **URL Slash 1 (On)** must be enabled in tools or ea3-config
+
+- GITADORA requires `mdb_*.xml` copied or symlinked to the server folder
+
+- NOSTALGIA requires `music_list.xml` copied or symlinked to the server folder
+
+## Web Interface
+
+- Extract [BounceTrippy](https://github.com/drmext/BounceTrippy/releases) webui to the server folder
