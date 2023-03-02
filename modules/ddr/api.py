@@ -17,7 +17,7 @@ from typing import Dict, List, Tuple
 from os import path
 
 
-router = APIRouter(prefix="/ddr", tags=["api"])
+router = APIRouter(prefix="/ddr", tags=["api_ddr"])
 
 
 class DDR_Profile_Main_Items(BaseModel):
@@ -149,7 +149,7 @@ async def ddr_scores_id(mcode: int):
 
 
 @router.get("/mcode/{mcode}/best")
-async def ddr_scores_id(mcode: int):
+async def ddr_scores_id_best(mcode: int):
     return get_db().table("ddr_scores_best").search((where("mcode") == mcode))
 
 
@@ -259,6 +259,6 @@ async def ddr_receive_mdb(file: UploadFile = File(...)) -> bytes:
                 mdb[mcode] = mdb_old[mcode]
 
     with open(ddr_metadata, "w", encoding="utf-8") as fp:
-        json.dump(mdb, fp, indent=4, ensure_ascii=False)
+        json.dump(mdb, fp, indent=4, ensure_ascii=False, escape_forward_slashes=False)
 
     return Response(status_code=201)

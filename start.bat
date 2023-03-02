@@ -19,7 +19,7 @@ if exist .venv\Lib\site-packages\ujson*.pyd (
 
 echo:
 echo Install python with "Add python.exe to PATH" checked
-echo https://www.python.org/ftp/python/3.11.1/python-3.11.1-amd64.exe
+echo https://www.python.org/ftp/python/3.11.2/python-3.11.2-amd64.exe
 echo:
 
 pause

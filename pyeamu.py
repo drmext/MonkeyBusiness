@@ -55,7 +55,7 @@ app.add_middleware(
 if path.exists("webui"):
     webui = True
     with open(path.join("webui", "monkey.json"), "w") as f:
-        json.dump(settings, f, indent=2)
+        json.dump(settings, f, indent=2, escape_forward_slashes=False)
     app.mount("/webui", StaticFiles(directory="webui", html=True), name="webui")
 else:
     webui = False
