@@ -472,26 +472,20 @@ async def usergamedata_advanced(request: Request):
 
         load = []
         names = {}
-        for r in scores:
-            if r["ddr_id"] not in names:
-                names[r["ddr_id"]] = {}
-                names[r["ddr_id"]]["name"] = get_common(r["ddr_id"], game_version, 27)
-                names[r["ddr_id"]]["area"] = int(
-                    str(get_common(r["ddr_id"], game_version, 3)), 16
+
+        profiles = get_db().table("ddr_profile")
+        for p in profiles:
+            names[p["ddr_id"]] = {}
+            try:
+                names[p["ddr_id"]]["name"] = p["version"][str(game_version)][
+                    "common"
+                ].split(",")[27]
+                names[p["ddr_id"]]["area"] = int(
+                    str(p["version"][str(game_version)]["common"].split(",")[3]), 16
                 )
-            load.append(
-                {
-                    "mcode": r["mcode"],
-                    "difficulty": r["difficulty"],
-                    "rank": r["rank"],
-                    "lamp": r["lamp"],
-                    "name": names[r["ddr_id"]]["name"],
-                    "area": names[r["ddr_id"]]["area"],
-                    "ddr_id": r["ddr_id"],
-                    "score": r["score"],
-                    "ghostid": r["ghostid"],
-                }
-            )
+            except KeyError:
+                names[p["ddr_id"]]["name"] = "UNKNOWN"
+                names[p["ddr_id"]]["area"] = 13
 
         response = E.response(
             E.playerdata(
@@ -500,18 +494,28 @@ async def usergamedata_advanced(request: Request):
                     E.recordtype(loadflag, __type="s32"),
                     *[
                         E.record(
-                            E.mcode(s["mcode"], __type="u32"),
-                            E.notetype(s["difficulty"], __type="u8"),
-                            E.rank(s["rank"], __type="u8"),
-                            E.clearkind(s["lamp"], __type="u8"),
+                            E.mcode(r["mcode"], __type="u32"),
+                            E.notetype(r["difficulty"], __type="u8"),
+                            E.rank(r["rank"], __type="u8"),
+                            E.clearkind(r["lamp"], __type="u8"),
                             E.flagdata(0, __type="u8"),
-                            E.name(s["name"], __type="str"),
-                            E.area(s["area"], __type="s32"),
-                            E.code(s["ddr_id"], __type="s32"),
-                            E.score(s["score"], __type="s32"),
-                            E.ghostid(s["ghostid"], __type="s32"),
+                            E.name(
+                                names[r["ddr_id"]]["name"]
+                                if r["ddr_id"] in names
+                                else "UNKNOWN",
+                                __type="str",
+                            ),
+                            E.area(
+                                names[r["ddr_id"]]["area"]
+                                if r["ddr_id"] in names
+                                else 13,
+                                __type="s32",
+                            ),
+                            E.code(r["ddr_id"], __type="s32"),
+                            E.score(r["score"], __type="s32"),
+                            E.ghostid(r["ghostid"], __type="s32"),
                         )
-                        for s in load
+                        for r in scores
                     ],
                 ),
             )

@@ -472,20 +472,29 @@ async def usergamedata_advanced(request: Request):
 
         load = []
         names = {}
-        for r in scores:
-            if r["ddr_id"] not in names:
-                names[r["ddr_id"]] = {}
-                names[r["ddr_id"]]["name"] = get_common(r["ddr_id"], game_version, 27)
-                names[r["ddr_id"]]["area"] = int(
-                    str(get_common(r["ddr_id"], game_version, 3)), 16
+
+        profiles = get_db().table("ddr_profile")
+        for p in profiles:
+            names[p["ddr_id"]] = {}
+            try:
+                names[p["ddr_id"]]["name"] = p["version"][str(game_version)][
+                    "common"
+                ].split(",")[27]
+                names[p["ddr_id"]]["area"] = int(
+                    str(p["version"][str(game_version)]["common"].split(",")[3]), 16
                 )
+            except KeyError:
+                names[p["ddr_id"]]["name"] = "UNKNOWN"
+                names[p["ddr_id"]]["area"] = 13
+
+        for r in scores:
             s = [
                 r["mcode"],
                 r["difficulty"],
                 r["rank"],
                 r["lamp"],
-                names[r["ddr_id"]]["name"],
-                names[r["ddr_id"]]["area"],
+                names[r["ddr_id"]]["name"] if r["ddr_id"] in names else "UNKNOWN",
+                names[r["ddr_id"]]["area"] if r["ddr_id"] in names else 13,
                 r["ddr_id"],
                 r["score"],
                 r["ghostid"],
