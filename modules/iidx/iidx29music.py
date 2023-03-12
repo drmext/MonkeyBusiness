@@ -58,7 +58,6 @@ async def iidx29music_getrank(request: Request):
             & (where("play_style") == play_style)
             & (where("iidx_id") == iidxid)
         ):
-
             music_id = record["music_id"]
             clear_flg = record["clear_flg"]
             ex_score = record["ex_score"]
@@ -77,6 +76,15 @@ async def iidx29music_getrank(request: Request):
             all_scores[rival_idx, music_id][chart_id]["clear_flg"] = clear_flg
             all_scores[rival_idx, music_id][chart_id]["ex_score"] = ex_score
             all_scores[rival_idx, music_id][chart_id]["miss_count"] = miss_count
+
+    names = {}
+    profiles = get_db().table("iidx_profile")
+    for p in profiles:
+        names[p["iidx_id"]] = {}
+        try:
+            names[p["iidx_id"]]["name"] = p["version"][str(game_version)]["djname"]
+        except KeyError:
+            names[p["iidx_id"]]["name"] = "UNK"
 
     top_scores = {}
     for record in db.table("iidx_scores_best").search(
@@ -98,10 +106,7 @@ async def iidx29music_getrank(request: Request):
             }
 
         if ex_score > top_scores[music_id][chart_id]["ex_score"]:
-            top_name = db.table("iidx_profile").get(where("iidx_id") == iidx_id)[
-                "version"
-            ][str(game_version)]["djname"]
-            top_scores[music_id][chart_id]["djname"] = top_name
+            top_scores[music_id][chart_id]["djname"] = names[iidx_id]["name"]
             top_scores[music_id][chart_id]["clear_flg"] = 1
             top_scores[music_id][chart_id]["ex_score"] = ex_score
 
