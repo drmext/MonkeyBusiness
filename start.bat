@@ -3,18 +3,19 @@
 cd /d %~dp0
 
 if exist .venv\Lib\site-packages\ujson*.pyd (
-  (
-    goto :make_venv_portable
-    :start_server
-    .venv\Scripts\activate.bat && python pyeamu.py
-  )
+    (
+        REM goto :make_venv_portable
+        :start_server
+        .venv\Scripts\activate.bat && python pyeamu.py
+    )
 ) else (
-  (
-    python -m venv .venv
-    .venv\Scripts\activate.bat
-    pip install -U -r requirements.txt
-    python pyeamu.py
-  )
+    (
+        :create_venv
+        python -m venv .venv
+        .venv\Scripts\activate.bat
+        pip install -U -r requirements.txt
+        python pyeamu.py
+    )
 )
 
 echo:
