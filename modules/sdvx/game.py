@@ -70,15 +70,25 @@ async def game_sv6_common(request: Request):
         "CREW_SELECT_ABLE",
         "PREMIUM_TIME_ENABLE",
         "OMEGA_ENABLE\t1,2,3,4,5,6,7,8,9",
-        "HEXA_ENABLE\t1,2,3,4,5",
+        "HEXA_ENABLE\t1,2,3,4,5,6,7",
         "MEGAMIX_ENABLE",
         "VALGENE_ENABLE",
         "ARENA_ENABLE",
+        "ARENA_LOCAL_TO_ONLINE_ENABLE",
+        "ARENA_ALTER_MODE_WINDOW_ENABLE",
+        "ARENA_PASS_MATCH_WINDOW_ENABLE",
+        "DEMOLOOP_PASELI_FESTIVAL_2022",
+        "DISABLED_MUSIC_IN_ARENA_ONLINE",
+        "ARENA_VOTE_MODE_ENABLE",
         "DISP_PASELI_BANNER",
+        "S_PUC_EFFECT_ENABLE",
+        "SUPER_RANDOM_ACTIVE",
+        "PLAYER_RADAR_ENABLE",
+        "SINGLE_BATTLE_ENABLE",
     ]
 
     unlock = []
-    for i in range(2000):
+    for i in range(3000):
         for j in range(0, 5):
             unlock.append([i, j])
 
