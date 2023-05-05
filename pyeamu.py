@@ -3,7 +3,7 @@ from urllib.parse import urlunparse, urlencode
 import uvicorn
 
 import ujson as json
-from os import path
+from os import name, path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,28 +65,34 @@ else:
         return RedirectResponse(url="/config")
 
 
+# Enable ANSI escape sequences
+if name == "nt":
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+
+
 if __name__ == "__main__":
-    print(" __  __             _              ")
-    print("|  \/  | ___  _ __ | | _____ _   _ ")
-    print("| |\/| |/ _ \| '_ \| |/ / _ \ | | |")
-    print("| |  | | (_) | | | |   <  __/ |_| |")
-    print("|_|  |_|\___/|_| |_|_|\_\___|\__, |")
-    print("                             |___/ ")
-    print(" ____            _                 ")
-    print("| __ ) _   _ ___(_)_ __   ___  ___ ___ ")
-    print("|  _ \| | | / __| | '_ \ / _ \/ __/ __|")
-    print("| |_) | |_| \__ \ | | | |  __/\__ \__ \\")
-    print("|____/ \__,_|___/_|_| |_|\___||___/___/")
+    print(
+        """
+ █▄ ▄█ █▀█ █▄ █ █▄▀ ▀██ ▀▄▀
+ █ ▀ █ █▄█ █ ▀█ █ █ ▄▄█  █
+
+ ██▄ █ █ ▄▀▀ ▄█ █▄ █ ▀██ ▀█▀
+ █▄█ ▀▄█ ▄██  █ █ ▀█ ▄▄█ █▄▄
+"""
+    )
     print()
-    print("Game Config:")
-    print(f"<services>{server_services_url}</services>")
-    print('<url_slash __type="bool">1</url_slash>')
+    print("\033[1mGame Config\033[0m:")
+    print(f"<services>\033[92m{server_services_url}\033[0m</services>")
+    print('<url_slash __type="bool">\033[92m1\033[0m</url_slash>')
     print()
     if webui:
-        print("Web Interface:")
+        print("\033[1mWeb Interface\033[0m:")
         print(f"http://{server_address}/webui/")
         print()
-    print("Source Repository:")
+    print("\033[1mSource Repository\033[0m:")
     print("https://github.com/drmext/MonkeyBusiness")
     print()
     uvicorn.run("pyeamu:app", host=config.ip, port=config.port, reload=True)

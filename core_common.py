@@ -140,7 +140,8 @@ async def core_process_request(request):
     request.is_binxml = KBinXML.is_binary_xml(xml_dec)
 
     if config.verbose_log:
-        print("Request:")
+        print()
+        print("\033[94mREQUEST\033[0m:")
         print(xml_text)
 
     model_parts = (root.attrib["model"], *root.attrib["model"].split(":"))
@@ -173,7 +174,7 @@ async def core_prepare_response(request, xml):
         xml_binary = binxml.to_text().encode("utf-8")  # TODO: Proper encoding
 
     if config.verbose_log:
-        print("Response:")
+        print("\033[91mRESPONSE\033[0m:")
         print(binxml.to_text())
 
     response_headers = {"User-Agent": "EAMUSE.Httpac/1.0"}
