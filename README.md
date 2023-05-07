@@ -8,9 +8,9 @@ for experimental local testing and playing
 
 ## Instructions
 
-1. Install [python](https://www.python.org/ftp/python/3.11.2/python-3.11.2-amd64.exe) with "Add python.exe to PATH" checked
+1. Install [python](https://www.python.org/ftp/python/3.11.3/python-3.11.3-amd64.exe) with "Add python.exe to PATH" checked
 
-1. Run `start.bat`
+1. Run [start.bat (Windows)](start.bat) or [start.sh (Linux)](start.sh)
 
 1. Edit prop/ea3-config.xml services *url* and url_slash *1*
 
@@ -18,6 +18,8 @@ for experimental local testing and playing
 
 - DDR A20 PLUS
 - DDR A3
+
+- DRS
 
 - GITADORA 5 Matixx
 - GITADORA 6 EXCHAIN
@@ -39,10 +41,12 @@ for experimental local testing and playing
 
 - **URL Slash 1 (On)** must be enabled in tools or ea3-config
 
-- GITADORA requires `mdb_*.xml` copied or symlinked to the server folder
+- GITADORA requires `mdb_*.xml` copied to the server folder
 
-- NOSTALGIA requires `music_list.xml` copied or symlinked to the server folder
+- NOSTALGIA requires `music_list.xml` copied to the server folder
+
+- DRS requires `music-info-base.xml` copied to the server folder
 
 ## Web Interface
 
-- Extract [BounceTrippy](https://github.com/drmext/BounceTrippy/releases) webui to the server folder
+- Extract [BounceTrippy](https://github.com/drmext/BounceTrippy/releases) webui to the server folder (DDR only)

@@ -106,6 +106,9 @@ async def core_get_game_version_from_software_version(software_version):
         if ext >= 2020090402:  # ???
             return 6
 
+    elif model == "REC":
+        return 1
+
     else:
         return 0
 
