@@ -139,15 +139,31 @@ async def gitadora_gametop_get(ver: str, request: Request):
                         E.kind(1, __type="s32"),
                     )
                 ),
-                E.chara_list(),
-                E.title_parts(),
+                E.chara_list(
+                    E.chara(
+                        E.charaid(1, __type="s32"),
+                    )
+                ),
+                E.title_parts(
+                    E.parts("", __type="str"),
+                ),
                 E.information(
                     E.info(profile[g]["information"], __type="u32"),
                 ),
                 E.reward(
                     E.status(profile[g]["reward"], __type="u32"),
                 ),
-                E.rivaldata(),
+                E.rivaldata(
+                    *[
+                        E.rival(
+                            E.did(1, __type="s32"),
+                            E.name("", __type="str"),
+                            E.active_index(r_idx, __type="s32"),
+                            E.refid(r, __type="str"),
+                        )
+                        for r_idx, r in enumerate(profile.get("rival_card_ids", []), 1)
+                    ]
+                ),
                 E.frienddata(E.friend()),
                 E.thanks_medal(
                     E.medal(profile[g]["thanks_medal_medal"], __type="s32"),

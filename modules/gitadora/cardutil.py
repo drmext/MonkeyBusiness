@@ -91,6 +91,7 @@ async def gitadora_cardutil_regist(ver: str, request: Request):
         "title": "MONKEY BUSINESS",
         "charaid": 0,
         "stickers": {},
+        "rival_card_ids": [],
     }
 
     for game_type in ("drummania", "guitarfreaks"):
