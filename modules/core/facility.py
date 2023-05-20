@@ -36,12 +36,12 @@ async def facility_get(request: Request):
                 E("id", 3, __type="str"),
             ),
             E.portfw(
-                E.globalip(config.ip, __type="ip4"),
-                E.globalport(5704, __type="u16"),
-                E.privateport(5705, __type="u16"),
+                E.globalip(request.client.host, __type="ip4"),
+                E.globalport(5700, __type="u16"),
+                E.privateport(5700, __type="u16"),
             ),
             E.public(
-                E.flag(0, __type="u8"),
+                E.flag(1, __type="u8"),
                 E.name(config.arcade, __type="str"),
                 E.latitude(0, __type="str"),
                 E.longitude(0, __type="str"),

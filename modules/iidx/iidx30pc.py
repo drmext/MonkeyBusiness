@@ -291,7 +291,7 @@ async def iidx30pc_get(request: Request):
             E.arena_data(
                 E.achieve_data(
                     play_style=0,
-                    arena_class=-1,
+                    arena_class=19,
                     rating_value=90,
                     win_count=0,
                     now_winning_streak_count=0,
@@ -302,7 +302,7 @@ async def iidx30pc_get(request: Request):
                 ),
                 E.achieve_data(
                     play_style=1,
-                    arena_class=-1,
+                    arena_class=19,
                     rating_value=90,
                     win_count=0,
                     now_winning_streak_count=0,

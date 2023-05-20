@@ -49,7 +49,7 @@ async def iidx30gamesystem_systeminfo(request: Request):
             *[
                 E.arena_music_difficult(
                     E.play_style(s, __type="s32"),
-                    E.arena_class(-1, __type="s32"),
+                    E.arena_class(19, __type="s32"),
                     E.low_difficult(1, __type="s32"),
                     E.high_difficult(12, __type="s32"),
                     E.is_leggendaria(1, __type="bool"),
@@ -60,7 +60,7 @@ async def iidx30gamesystem_systeminfo(request: Request):
             *[
                 E.arena_cpu_define(
                     E.play_style(s, __type="s32"),
-                    E.arena_class(-1, __type="s32"),
+                    E.arena_class(19, __type="s32"),
                     E.grade_id(18, __type="s32"),
                     E.low_music_difficult(8, __type="s32"),
                     E.high_music_difficult(12, __type="s32"),
