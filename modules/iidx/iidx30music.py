@@ -479,3 +479,14 @@ async def iidx30music_appoint(request: Request):
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
+
+@router.post("/{gameinfo}/IIDX30music/arenaCPU")
+async def iidx30music_arenaCPU(request: Request):
+    request_info = await core_process_request(request)
+
+    root = request_info["root"][0]
+
+    response = E.response(E.IIDX30music())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)

@@ -1,3 +1,5 @@
+from time import time
+
 import config
 
 from fastapi import APIRouter, Request, Response
@@ -18,9 +20,9 @@ async def iidx30gamesystem_systeminfo(request: Request):
     response = E.response(
         E.IIDX30gameSystem(
             E.arena_schedule(
-                E.phase(2, __type="u8"),
+                E.phase(3, __type="u8"),
                 E.start(1605784800, __type="u32"),
-                E.end(1605871200, __type="u32"),
+                E.end(round(time()), __type="u32"),
             ),
             E.CommonBossPhase(val=0),
             E.Event1InternalPhase(val=0),
@@ -50,7 +52,7 @@ async def iidx30gamesystem_systeminfo(request: Request):
                 E.arena_music_difficult(
                     E.play_style(s, __type="s32"),
                     E.arena_class(19, __type="s32"),
-                    E.low_difficult(1, __type="s32"),
+                    E.low_difficult(8, __type="s32"),
                     E.high_difficult(12, __type="s32"),
                     E.is_leggendaria(1, __type="bool"),
                     E.force_music_list_id(0, __type="s32"),
@@ -84,7 +86,7 @@ async def iidx30gamesystem_systeminfo(request: Request):
                     E.index(0, __type="s32"),
                     E.music_id(1000, __type="s32"),
                     E.note_grade(0, __type="s32"),
-                    E.is_active(s, __type="bool"),
+                    E.is_active(0, __type="bool"),
                 )
                 for s in sp_dp
             ],
