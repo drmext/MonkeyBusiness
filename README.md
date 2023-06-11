@@ -47,6 +47,16 @@ for experimental local testing and playing
 
 - DRS requires `music-info-base.xml` copied to the server folder
 
+## Score Import
+
+Scores can be [imported](utils/db) from any network
+
+- DDR
+
+- IIDX
+
 ## Web Interface
 
-- Extract [BounceTrippy](https://github.com/drmext/BounceTrippy/releases) webui to the server folder (DDR only)
+Extract [BounceTrippy](https://github.com/drmext/BounceTrippy/releases) webui to the server folder
+
+- DDR

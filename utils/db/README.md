@@ -1,6 +1,6 @@
 # Database Utilities
 
-**Backup db.json before shrinking or importing**
+**Backup db.json before using these scripts**
 
 ## Shrink DB
 
@@ -12,8 +12,6 @@ Example:
 `python utils\db\trim_monkey_db.py`
 
 ## Score Import
-
-### [import_ddr_spice_automap.py](import_ddr_spice_automap.py)
 
 Instructions:
 
@@ -27,10 +25,20 @@ Instructions:
 
 1. Disable `EA Automap` and `EA Netdump` in spicecfg
 
-1. Run the import script
+1. Run the corresponding import script
+
+### [import_ddr_spice_automap.py](import_ddr_spice_automap.py)
 
 Example: `python utils\db\import_ddr_spice_automap.py --automap_xml automap_0.xml --version 19 --monkey_db db.json --ddr_id 12345678`
 
-- `--version` {19 for A20P or 20 for A3}
+- `--version` 19 for A20P or 20 for A3
 
-- `--ddr_id` {destination profile in db.json}
+- `--ddr_id` destination profile in db.json
+
+### [import_iidx_spice_automap.py](import_iidx_spice_automap.py)
+
+Example: `python utils\db\import_iidx_spice_automap.py --automap_xml automap_0.xml --version 30 --monkey_db db.json --iidx_id 12345678`
+
+- `--version` must match the source export version (27+ supported)
+
+- `--iidx_id` destination profile in db.json
