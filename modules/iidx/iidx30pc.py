@@ -1040,27 +1040,40 @@ async def iidx30pc_getlanegachaticket(request: Request):
 
     response = E.response(
         E.IIDX30pc(
-            E.ticket(
-                ticket_id=0,
-                arrange_id=0,
-                expire_date=0,
-            ),
+            *[
+                E.ticket(
+                    ticket_id=i,
+                    arrange_id=i,
+                    expire_date=0,
+                )
+                for i in range(5040)
+            ],
             E.setting(
-                sp=0,
-                dp_left=0,
-                dp_right=0,
+                sp=-1,
+                dp_left=-1,
+                dp_right=-1,
             ),
             E.info(
-                last_page=0,
+                last_page=1,
             ),
             E.free(
                 num=10,
             ),
             E.favorite(
-                arrange=0,
+                arrange=1234567,
             ),
         )
     )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX30pc/consumeLaneGachaTicket")
+async def iidx30pc_consumelanegachaticket(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX30pc())
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
@@ -1073,11 +1086,11 @@ async def iidx30pc_drawlanegacha(request: Request):
     response = E.response(
         E.IIDX30pc(
             E.ticket(
-                ticket_id=0,
-                arrange_id=0,
+                ticket_id=1,
+                arrange_id=1,
                 expire_date=0,
             ),
-            E.session(session_id=0),
+            E.session(session_id=1),
             status=0,
         )
     )
