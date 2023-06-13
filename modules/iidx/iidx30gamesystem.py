@@ -31,7 +31,7 @@ async def iidx30gamesystem_systeminfo(request: Request):
             E.gradeOpenPhase(val=2),
             E.isEiseiOpenFlg(val=1),
             E.WorldTourismOpenList(val=1),
-            E.BPLBattleOpenPhase(val=2),
+            E.BPLBattleOpenPhase(val=3),
             *[
                 E.music_open(
                     E.music_id(s, __type="s32"),
