@@ -1,5 +1,6 @@
 from tinydb import Query, where
 
+from time import time
 import config
 import random
 
@@ -104,6 +105,8 @@ async def iidx30pc_get(request: Request):
         rivals[idx]["hair"] = rival_profile["hair"]
         rivals[idx]["hand"] = rival_profile["hand"]
         rivals[idx]["head"] = rival_profile["head"]
+
+    current_time = round(time())
 
     response = E.response(
         E.IIDX30pc(
@@ -215,6 +218,9 @@ async def iidx30pc_get(request: Request):
                 ],
                 __type="s16",
             ),
+            E.spdp_rival(
+                flg=-1
+            ),  # required for rivals to load after switching spdp in music select
             E.rlist(
                 *[
                     E.rival(
@@ -261,6 +267,15 @@ async def iidx30pc_get(request: Request):
             E.world_tourism_secret_flg(
                 E.flg1(profile.get("wt_flg1", [-1, -1, -1]), __type="s64"),
                 E.flg2(profile.get("wt_flg2", [-1, -1, -1]), __type="s64"),
+            ),
+            E.world_tourism(
+                *[
+                    E.tour_data(
+                        tour_id=i,
+                        progress=50,  # set to 49 to see WT folders, 50 is completed/hidden
+                    )
+                    for i in range(13)
+                ],
             ),
             E.lightning_setting(
                 E.slider(
@@ -315,15 +330,53 @@ async def iidx30pc_get(request: Request):
                     cube=200,
                     season_id=0,
                 ),
+                E.ranker_data(
+                    play_style=0,
+                    pref_id=0,
+                    rank_num=(random.choice([random.randint(1, 5), 573])),
+                ),
+                E.ranker_data(
+                    play_style=1,
+                    pref_id=0,
+                    rank_num=(random.choice([random.randint(1, 5), 573])),
+                ),
+                E.lose_data(
+                    play_style=0,
+                    lose_value=0,
+                ),
+                E.lose_data(
+                    play_style=1,
+                    lose_value=0,
+                ),
                 E.chat_data(
                     E.is_chat_0(1, __type="bool"),
                     E.is_chat_1(1, __type="bool"),
                     E.is_chat_2(1, __type="bool"),
                     E.is_chat_3(1, __type="bool"),
                     chat_type_0="hi",
-                    chat_type_1="hi",
-                    chat_type_2="hi",
-                    chat_type_3="hi",
+                    chat_type_1="やあ",
+                    chat_type_2="こんにちは",
+                    chat_type_3="おす",
+                ),
+                E.tendency(
+                    play_style=0,
+                    rank0=1,
+                    rank1=2,
+                    rank2=3,
+                    rank3=4,
+                    rank4=3,
+                    rank5=1,
+                ),
+                E.player_kind_data(
+                    kind=(random.choice([random.randint(0, 13), 0])),
+                ),
+                E.setting(
+                    stats_type=0,
+                ),
+                E.qpro_motion(
+                    motion_0=1,
+                    motion_1=2,
+                    motion_2=3,
                 ),
                 play_num=6,
                 play_num_dp=3,
@@ -367,17 +420,13 @@ async def iidx30pc_get(request: Request):
             E.tonjyutsu(black_pass=-1, platinum_pass=-1),
             E.pay_per_use(item_num=99),
             E.old_linkage_secret_flg(
-                floor_infection4=-1,
-                bemani_janken=-1,
-                ichika_rush=-1,
-                nono_rush=-1,
                 song_battle=-1,
             ),
             E.floor_infection4(music_list=-1),
             E.bemani_vote(music_list=-1),
             E.bemani_janken_meeting(music_list=-1),
             E.bemani_rush(music_list_ichika=-1, music_list_nono=-1),
-            E.ultimate_mobile_link(music_list=-1),
+            E.ultimate_mobile_link(E.link_flag(), music_list=-1),
             E.bemani_musiq_fes(music_list=-1),
             E.busou_linkage(music_list=-1),
             E.busou_linkage_2(music_list=-1),
@@ -471,18 +520,195 @@ async def iidx30pc_get(request: Request):
                 skin_bgm_flg=profile["skin_customize_flag_bgm"],
                 skin_lane_flg3=profile["skin_customize_flag_lane"],
             ),
+            # E.event_1(
+            #     E.flyer_data(
+            #         flyer_id=0,
+            #         play_num=0,
+            #         last_select_genre=0,
+            #         flyer_prog=0,
+            #         skill_param=0,
+            #     ),
+            #     E.genre_data(
+            #         E.is_complete(0, __type="bool"),
+            #         flyer_id=0,
+            #         genre_id=0,
+            #         play_num=0,
+            #         gauge=0,
+            #     ),
+            #     event_play_num=0,
+            #     last_select_flyer_id=0,
+            # ),
+            E.player_compe(
+                E.compe_data(
+                    E.compe_music(
+                        index=0,
+                        music_id=26029,
+                        style_id=0,
+                        note_grade_id=3,
+                        ex_score=6,
+                        pgreat_num=6,
+                        great_num=6,
+                        miss_num=6,
+                    ),
+                    E.compe_music(
+                        index=1,
+                        music_id=29057,
+                        style_id=0,
+                        note_grade_id=3,
+                        ex_score=6,
+                        pgreat_num=6,
+                        great_num=6,
+                        miss_num=6,
+                    ),
+                    E.compe_music(
+                        index=2,
+                        music_id=8027,
+                        style_id=0,
+                        note_grade_id=3,
+                        ex_score=6,
+                        pgreat_num=6,
+                        great_num=6,
+                        miss_num=6,
+                    ),
+                    E.compe_music(
+                        index=3,
+                        music_id=16027,
+                        style_id=0,
+                        note_grade_id=3,
+                        ex_score=6,
+                        pgreat_num=6,
+                        great_num=6,
+                        miss_num=6,
+                    ),
+                    compe_id=0,
+                    forced_option=1,
+                    compe_end_time=current_time,
+                    compe_name="Monkey Business",
+                    maker_name="kors k",
+                    ex_score=666,
+                    pgreat_num=666,
+                    great_num=666,
+                    my_rank=1,
+                    total_join=1,
+                ),
+            ),
+            # E.news(
+            #     *[E(x,
+            #         E.detail(
+            #             music_id=1000,
+            #             class_id=3,
+            #             news_type=0,
+            #             news_data=1572,
+            #             news_time=current_time,
+            #             dj_name="TEST",
+            #         ),
+            #         last_read_time=current_time,
+            #     )for x in ("news_data_all", "news_data_shop", "news_data_grade", "news_data_rival", "news_data_all_top", "news_data_area_top", "news_data_shop_top")],
+            # disp_score_type=0,
+            # ),
+            E.exam_data(
+                E.music(
+                    radar_type=1,
+                    index=0,
+                    music_id=26029,
+                    class_id=3,
+                    rank=1,
+                    score=1,
+                ),
+                E.music(
+                    radar_type=1,
+                    index=1,
+                    music_id=29057,
+                    class_id=3,
+                    rank=1,
+                    score=1,
+                ),
+                E.music(
+                    radar_type=1,
+                    index=2,
+                    music_id=8027,
+                    class_id=3,
+                    rank=1,
+                    score=1,
+                ),
+                E.music(
+                    radar_type=1,
+                    index=3,
+                    music_id=16027,
+                    class_id=3,
+                    rank=1,
+                    score=1,
+                ),
+                exam_id=0,
+                entry_num=1,
+                rank=1,
+                total_score=1,
+                end_time=current_time,
+            ),
+            # E.questionnaire(
+            #     *[E.questionnaire_data(
+            #         questionnaire_id=i,
+            #         answer="what is this?"
+            #     )for i in range(10)],
+            # ),
             E.badge(
+                # Base
                 E.badge_data(
-                    category_id=0,
-                    badge_flg_id=0,
-                    badge_flg=0,
+                    category_id=1,
+                    badge_flg_id=23,
+                    badge_flg=554321,
+                ),
+                E.badge_data(
+                    category_id=1,
+                    badge_flg_id=11,
+                    badge_flg=554321,
                 ),
                 E.badge_equip(
-                    E.equip_flg(0, __type="bool"),
-                    category_id=0,
-                    badge_flg_id=0,
-                    index=0,
+                    E.equip_flg(1, __type="bool"),
+                    category_id=1,
+                    badge_flg_id=23,
+                    index=5,
                     slot=0,
+                ),
+                E.badge_equip(
+                    E.equip_flg(1, __type="bool"),
+                    category_id=1,
+                    badge_flg_id=11,
+                    index=5,
+                    slot=4,
+                ),
+                # Class
+                E.badge_data(
+                    category_id=2,
+                    badge_flg_id=0,
+                    badge_flg=191919191919,
+                ),
+                E.badge_equip(
+                    E.equip_flg(1, __type="bool"),
+                    category_id=2,
+                    badge_flg_id=0,
+                    index=2,
+                    slot=3,
+                ),
+                E.badge_equip(
+                    E.equip_flg(1, __type="bool"),
+                    category_id=2,
+                    badge_flg_id=0,
+                    index=5,
+                    slot=1,
+                ),
+                # Radar Rank
+                E.badge_data(
+                    category_id=7,
+                    badge_flg_id=1,
+                    badge_flg=1010101010,
+                ),
+                E.badge_equip(
+                    E.equip_flg(1, __type="bool"),
+                    category_id=7,
+                    badge_flg_id=1,
+                    index=2,
+                    slot=2,
                 ),
             ),
         )
@@ -560,6 +786,7 @@ async def iidx30pc_common(request: Request):
             E.lane_gacha(),
             # E.fps_fix(),
             # E.save_unsync_log(),
+            E.tourism_booster(),
             expire=600,
         )
     )

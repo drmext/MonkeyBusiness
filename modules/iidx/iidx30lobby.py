@@ -162,6 +162,7 @@ async def iidx30lobby_bplbattle_delete(request: Request):
     for host in bpl_host:
         if bpl_host[host]["ga"] == ga:
             del bpl_host[host]
+            break
     response = E.response(E.IIDX30lobby())
 
     response_body, response_headers = await core_prepare_response(request, response)

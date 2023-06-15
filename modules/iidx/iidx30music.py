@@ -1,4 +1,5 @@
 import time
+import random
 from enum import IntEnum
 
 from fastapi import APIRouter, Request, Response
@@ -144,7 +145,7 @@ async def iidx30music_getrank(request: Request):
                     name4=top_scores[k][4]["djname"],
                 )
                 for k in top_scores
-            ]
+            ],
         )
     )
 
@@ -480,13 +481,63 @@ async def iidx30music_appoint(request: Request):
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
 
+
 @router.post("/{gameinfo}/IIDX30music/arenaCPU")
 async def iidx30music_arenaCPU(request: Request):
     request_info = await core_process_request(request)
 
     root = request_info["root"][0]
+    music_list = root.findall("music_list")
+    music_count = len(music_list)
+    cpu_list = root.findall("cpu_list")
+    cpu_count = len(cpu_list)
 
-    response = E.response(E.IIDX30music())
+    cpu_scores = {}
+    cpu_ghosts = {}
+    for music in music_list:
+        i = int(music.find("index").text)
+        exscore_max = int(music.find("total_notes").text) * 2
+
+        cpu_scores[i] = {}
+        cpu_ghosts[i] = {}
+
+        for j in range(cpu_count):
+            cpu_scores[i][j] = {}
+            cpu_ghosts[i][j] = {}
+
+            exscore = round(exscore_max * random.uniform(0.77, 0.93))
+            cpu_scores[i][j]["exscore"] = exscore
+
+            ghost_len = 64
+            ghost_data = [0] * ghost_len
+            for x in range(ghost_len):
+                ghost_data[x] = exscore // ghost_len
+                if (exscore % ghost_len) > x:
+                    ghost_data[x] += 1
+
+            cpu_ghosts[i][j]["ghost_data"] = ghost_data
+
+    response = E.response(
+        E.IIDX30music(
+            *[
+                E.cpu_score_list(
+                    E.index(i, __type="s32"),
+                    *[
+                        E.score_list(
+                            E.index(j, __type="s32"),
+                            E.score(cpu_scores[i][j]["exscore"], __type="s32"),
+                            E.ghost(cpu_ghosts[i][j]["ghost_data"], __type="u8"),
+                            E.enable_score(1, __type="bool"),
+                            E.enable_ghost(1, __type="bool"),
+                            E.location_id("X000000001", __type="str"),
+                        )
+                        for j in range(cpu_count)
+                    ],
+                )
+                for i in range(music_count)
+            ],
+        )
+    )
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
