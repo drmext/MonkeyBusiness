@@ -73,6 +73,7 @@ async def usergamedata_advanced(request: Request):
             "rival_3_ddr_id": 0,
             "single_grade": 0,
             "double_grade": 0,
+            "opt_timing_disp": -1,
         }
 
         db.table("ddr_profile").upsert(all_profiles_for_card, where("card") == refid)
@@ -94,6 +95,7 @@ async def usergamedata_advanced(request: Request):
 
             single_grade = profile.get("single_grade", 0)
             double_grade = profile.get("double_grade", 0)
+            opt_timing_disp = profile.get("opt_timing_disp", -1)
 
             for record in db.table("ddr_scores_best").search(
                 (where("game_version") == game_version) & (where("ddr_id") == ddr_id)
@@ -110,12 +112,19 @@ async def usergamedata_advanced(request: Request):
                     record["ghostid"],
                 ]
 
+        league_name = b64encode(str.encode("Monkey Business")).decode()
+        current_time = round(time.time()) * 1000
+
         response = E.response(
             E.playerdata_2(
                 E.result(0, __type="s32"),
                 E.is_new(1 if all_profiles_for_card is None else 0, __type="bool"),
                 E.is_refid_locked(0, __type="bool"),
-                E.eventdata_count_all(1, __type="s16"),
+                E.eventdata_count_all(0, __type="s16"),
+                E.opt_timing_disp(opt_timing_disp, __type="s32"),
+                E.bpl_season_id(1, __type="s8"),
+                E.bpl_team_id(7, __type="s8"),
+                E.bpl_user_type(1, __type="s8"),
                 *[
                     E.music(
                         E.mcode(int(mcode), __type="u32"),
@@ -151,28 +160,50 @@ async def usergamedata_advanced(request: Request):
                     E.double_grade(double_grade, __type="u32"),
                 ),
                 E.golden_league(
-                    E.league_class(0, __type="s32"),
+                    E.league_class(3, __type="s32"),
                     E.current(
-                        E.id(0, __type="s32"),
-                        E.league_name_base64("", __type="str"),
-                        E.start_time(0, __type="u64"),
-                        E.end_time(0, __type="u64"),
-                        E.summary_time(0, __type="u64"),
-                        E.league_status(0, __type="s32"),
-                        E.league_class(0, __type="s32"),
-                        E.league_class_result(0, __type="s32"),
-                        E.ranking_number(0, __type="s32"),
-                        E.total_exscore(0, __type="s32"),
-                        E.total_play_count(0, __type="s32"),
-                        E.join_number(0, __type="s32"),
-                        E.promotion_ranking_number(0, __type="s32"),
-                        E.demotion_ranking_number(0, __type="s32"),
-                        E.promotion_exscore(0, __type="s32"),
-                        E.demotion_exscore(0, __type="s32"),
+                        E.id(1, __type="s32"),
+                        E.league_name_base64(league_name, __type="str"),
+                        E.start_time(current_time, __type="u64"),
+                        E.end_time(current_time + 1000000000, __type="u64"),
+                        E.summary_time(current_time, __type="u64"),
+                        E.league_status(3, __type="s32"),
+                        E.league_class(2, __type="s32"),
+                        E.league_class_result(3, __type="s32"),
+                        E.ranking_number(1, __type="s32"),
+                        E.total_exscore(99999999, __type="s32"),
+                        E.total_play_count(999, __type="s32"),
+                        E.join_number(1, __type="s32"),
+                        E.promotion_ranking_number(1, __type="s32"),
+                        E.demotion_ranking_number(2, __type="s32"),
+                        E.promotion_exscore(1, __type="s32"),
+                        E.demotion_exscore(1, __type="s32"),
+                        E.league_name_eng_base64(league_name, __type="str"),
+                        E.advance_privilege_lgscore(999, __type="s32"),
+                    ),
+                    E.result(
+                        E.id(1, __type="s32"),
+                        E.league_name_base64(league_name, __type="str"),
+                        E.start_time(current_time, __type="u64"),
+                        E.end_time(current_time + 1000000000, __type="u64"),
+                        E.summary_time(current_time, __type="u64"),
+                        E.league_status(3, __type="s32"),
+                        E.league_class(2, __type="s32"),
+                        E.league_class_result(3, __type="s32"),
+                        E.ranking_number(1, __type="s32"),
+                        E.total_exscore(99999999, __type="s32"),
+                        E.total_play_count(999, __type="s32"),
+                        E.join_number(1, __type="s32"),
+                        E.promotion_ranking_number(1, __type="s32"),
+                        E.demotion_ranking_number(2, __type="s32"),
+                        E.promotion_exscore(1, __type="s32"),
+                        E.demotion_exscore(1, __type="s32"),
+                        E.league_name_eng_base64(league_name, __type="str"),
+                        E.advance_privilege_lgscore(999, __type="s32"),
                     ),
                 ),
                 E.championship(
-                    E.championship_id(0, __type="s32"),
+                    E.championship_id(1, __type="s32"),
                     E.name_base64("", __type="str"),
                     E.lang(
                         E.destinationcodes("", __type="str"),
@@ -342,10 +373,21 @@ async def usergamedata_advanced(request: Request):
             )
 
         elif int(data.find("isgameover").text) == 1:
-            single_grade = int(data.find("grade/single_grade").text)
-            double_grade = int(data.find("grade/double_grade").text)
             profile = get_profile(refid)
             game_profile = profile["version"].get(str(game_version), {})
+
+            single_grade = int(data.find("grade/single_grade").text)
+            double_grade = int(data.find("grade/double_grade").text)
+
+            for n in reversed(note):
+                try:
+                    opt_timing_disp = int(n.find("opt_timing_disp").text)
+                    if opt_timing_disp != 0:
+                        break
+                except AttributeError:
+                    opt_timing_disp = profile.get("opt_timing_disp", -1)
+                    break
+
             # workaround to save the correct dan grade by using the course mcode
             # because omnimix force unlocks all dan courses with <grade __type="u8">1</grade> in coursedb.xml
             if is_omni:
@@ -367,6 +409,7 @@ async def usergamedata_advanced(request: Request):
             game_profile["double_grade"] = max(
                 double_grade, game_profile.get("double_grade", double_grade)
             )
+            game_profile["opt_timing_disp"] = opt_timing_disp
 
             profile["version"][str(game_version)] = game_profile
             db.table("ddr_profile").upsert(profile, where("card") == refid)
