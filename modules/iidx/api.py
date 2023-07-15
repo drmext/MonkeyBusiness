@@ -68,18 +68,18 @@ class IIDX_Profile_Version_Items(BaseModel):
     skin_customize_flag_frame: Optional[int]
     skin_customize_flag_bgm: Optional[int]
     skin_customize_flag_lane: Optional[int]
-    sp_rival_1_iidx_id: Optional[int]
-    sp_rival_2_iidx_id: Optional[int]
-    sp_rival_3_iidx_id: Optional[int]
-    sp_rival_4_iidx_id: Optional[int]
-    sp_rival_5_iidx_id: Optional[int]
-    sp_rival_6_iidx_id: Optional[int]
-    dp_rival_1_iidx_id: Optional[int]
-    dp_rival_2_iidx_id: Optional[int]
-    dp_rival_3_iidx_id: Optional[int]
-    dp_rival_4_iidx_id: Optional[int]
-    dp_rival_5_iidx_id: Optional[int]
-    dp_rival_6_iidx_id: Optional[int]
+    sp_rival_1_iidx_id: Optional[int] = 0
+    sp_rival_2_iidx_id: Optional[int] = 0
+    sp_rival_3_iidx_id: Optional[int] = 0
+    sp_rival_4_iidx_id: Optional[int] = 0
+    sp_rival_5_iidx_id: Optional[int] = 0
+    sp_rival_6_iidx_id: Optional[int] = 0
+    dp_rival_1_iidx_id: Optional[int] = 0
+    dp_rival_2_iidx_id: Optional[int] = 0
+    dp_rival_3_iidx_id: Optional[int] = 0
+    dp_rival_4_iidx_id: Optional[int] = 0
+    dp_rival_5_iidx_id: Optional[int] = 0
+    dp_rival_6_iidx_id: Optional[int] = 0
 
 
 @router.get("/profiles")
@@ -269,7 +269,7 @@ async def iidx_receive_mdb(file: UploadFile = File(...)) -> bytes:
             return Response(status_code=422)
     else:
         # video_music_list.xml to fix broken characters in title/artist
-        # (this should be a seperate route)
+        # (this should be a separate route)
         try:
             with open(iidx_metadata, "r", encoding="utf-8") as f:
                 music_data = json.load(f)

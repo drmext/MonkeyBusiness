@@ -8,7 +8,7 @@ for experimental local testing and playing
 
 ## Instructions
 
-1. Install [python](https://www.python.org/ftp/python/3.11.3/python-3.11.3-amd64.exe) with "Add python.exe to PATH" checked
+1. Install [python](https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe) with "Add python.exe to PATH" checked
 
 1. Run [start.bat (Windows)](start.bat) or [start.sh (Linux)](start.sh)
 
@@ -60,3 +60,7 @@ Scores can be [imported](utils/db) from any network
 Extract [BounceTrippy](https://github.com/drmext/BounceTrippy/releases) webui to the server folder
 
 - DDR
+
+- IIDX
+
+- GITADORA
