@@ -35,7 +35,7 @@ def get_common(ddr_id, game_version, idx):
 
 
 @router.post("/{gameinfo}/playerdata_2/usergamedata_advanced")
-async def usergamedata_advanced(request: Request):
+async def playerdata_2_usergamedata_advanced(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info["game_version"]
     is_omni = True if request_info["rev"] == "O" else False
@@ -578,7 +578,7 @@ async def usergamedata_advanced(request: Request):
 
 
 @router.post("/{gameinfo}/playerdata_2/usergamedata_recv")
-async def usergamedata_recv(request: Request):
+async def playerdata_2_usergamedata_recv(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info["game_version"]
 
@@ -688,7 +688,7 @@ async def usergamedata_recv(request: Request):
 
 
 @router.post("/{gameinfo}/playerdata_2/usergamedata_send")
-async def usergamedata_send(request: Request):
+async def playerdata_2_usergamedata_send(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info["game_version"]
 

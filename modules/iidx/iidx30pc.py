@@ -274,7 +274,7 @@ async def iidx30pc_get(request: Request):
                         tour_id=i,
                         progress=50,  # set to 49 to see WT folders, 50 is completed/hidden
                     )
-                    for i in range(13)
+                    for i in range(16)
                 ],
             ),
             E.lightning_setting(
@@ -433,6 +433,8 @@ async def iidx30pc_get(request: Request):
             E.valkyrie_linkage(music_list_1=-1, music_list_2=-1, music_list_3=-1),
             E.bemani_song_battle(music_list=-1),
             E.bemani_mixup(music_list=-1),
+            E.ccj_linkage(music_list=-1),
+            E.triple_tribe(music_list=-1),
             E.achievements(
                 E.trophy(profile.get("achievements_trophy", [])[:10], __type="s64"),
                 pack=profile.get("achievements_pack_id", 0),
@@ -787,6 +789,7 @@ async def iidx30pc_common(request: Request):
             # E.fps_fix(),
             # E.save_unsync_log(),
             E.tourism_booster(),
+            E.ameto_event(),
             expire=600,
         )
     )

@@ -1,9 +1,10 @@
-from urllib.parse import urlunparse, urlencode
+from urllib.parse import urlparse, urlunparse, urlencode
 
 import uvicorn
 
 import ujson as json
 from os import name, path
+from typing import Optional
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,16 +17,24 @@ import utils.card as conv
 
 from core_common import core_process_request, core_prepare_response, E
 
+import socket
+
 
 def urlpathjoin(parts, sep="/"):
     return sep + sep.join([x.lstrip(sep) for x in parts])
 
 
-server_address = f"{config.ip}:{config.port}"
-server_services_url = urlunparse(
-    ("http", server_address, config.services_prefix, None, None, None)
-)
-keepalive_address = "127.0.0.1"
+loopback = "127.0.0.1"
+
+server_addresses = []
+for host in ("localhost", config.ip, socket.gethostname()):
+    server_addresses.append(f"{host}:{config.port}")
+
+server_services_urls = []
+for server_address in server_addresses:
+    server_services_urls.append(
+        urlunparse(("http", server_address, config.services_prefix, None, None, None))
+    )
 
 settings = {}
 for s in (
@@ -85,22 +94,35 @@ if __name__ == "__main__":
     )
     print()
     print("\033[1mGame Config\033[0m:")
-    print(f"<services>\033[92m{server_services_url}\033[0m</services>")
-    print('<url_slash __type="bool">\033[92m1\033[0m</url_slash>')
+    for server_services_url in server_services_urls:
+        print(f"<services>\033[92m{server_services_url}\033[0m</services>")
+    print("<!-- url_slash \033[92m0\033[0m or \033[92m1\033[0m -->")
+    # print('<url_slash __type="bool">\033[92m0\033[0m</url_slash>')
+    # print('<url_slash __type="bool">\033[92m1\033[0m</url_slash>')
     print()
     if webui:
         print("\033[1mWeb Interface\033[0m:")
-        print(f"http://{server_address}/webui/")
+        for server_address in server_addresses:
+            print(f"http://{server_address}/webui/")
         print()
     print("\033[1mSource Repository\033[0m:")
     print("https://github.com/drmext/MonkeyBusiness")
     print()
-    uvicorn.run("pyeamu:app", host=config.ip, port=config.port, reload=True)
+    uvicorn.run("pyeamu:app", host="0.0.0.0", port=config.port, reload=True)
 
 
+@app.post(urlpathjoin([config.services_prefix]))
 @app.post(urlpathjoin([config.services_prefix, "/{gameinfo}/services/get"]))
-async def services_get(request: Request):
+async def services_get(
+    request: Request,
+    model: Optional[str] = None,
+    f: Optional[str] = None,
+    module: Optional[str] = None,
+    method: Optional[str] = None,
+):
     request_info = await core_process_request(request)
+
+    request_address = f"{urlparse(str(request.url)).netloc}:{config.port}"
 
     services = {}
 
@@ -114,24 +136,42 @@ async def services_get(request: Request):
         if model_whitelist and request_info["model"] not in model_whitelist:
             continue
 
+        if (
+            service.tags
+            and service.tags[0].startswith("api_")
+            or service.tags[0] == "slashless_forwarder"
+        ):
+            continue
+
         k = (service.tags[0] if service.tags else service.prefix).strip("/")
-        if k not in services:
-            services[k] = urlunparse(
-                ("http", server_address, service.prefix, None, None, None)
-            )
+        if f == "services.get" or module == "services" and method == "get":
+            if service.prefix == "/core":
+                non_slash_prefix = "/core_fwdr"
+            else:
+                non_slash_prefix = "/fwdr"
+            if k not in services:
+                services[k] = urlunparse(
+                    ("http", request_address, non_slash_prefix, None, None, None)
+                )
+        # url_slash
+        else:
+            if k not in services:
+                services[k] = urlunparse(
+                    ("http", request_address, service.prefix, None, None, None)
+                )
 
     keepalive_params = {
-        "pa": keepalive_address,
-        "ia": keepalive_address,
-        "ga": keepalive_address,
-        "ma": keepalive_address,
+        "pa": loopback,
+        "ia": loopback,
+        "ga": loopback,
+        "ma": loopback,
         "t1": 2,
         "t2": 10,
     }
     services["keepalive"] = urlunparse(
         (
             "http",
-            keepalive_address,
+            loopback,
             "/keepalive",
             None,
             urlencode(keepalive_params),
@@ -139,9 +179,6 @@ async def services_get(request: Request):
         )
     )
     services["ntp"] = urlunparse(("ntp", "pool.ntp.org", "/", None, None, None))
-    services["services"] = urlunparse(
-        ("http", server_address, "/core", None, None, None)
-    )
 
     response = E.response(
         E.services(

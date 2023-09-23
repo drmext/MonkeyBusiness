@@ -17,7 +17,7 @@ async def iidx30gamesystem_systeminfo(request: Request):
     unlock = ()
     # force unlock LM exclusives to complete unlock all songs server side
     # this makes LM exclusive folder disappear, so just use hex edits
-    # unlock = (28073, 28008, 29095, 29094, 29027, 30077, 30076, 30098)
+    # unlock = (28073, 28008, 29095, 29094, 29027, 30077, 30076, 30098, 30106, 30107, 30028, 30064, 30027)
 
     current_time = round(time())
 

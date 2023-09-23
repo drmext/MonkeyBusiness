@@ -4,15 +4,15 @@ e-amusement server using [FastAPI](https://github.com/tiangolo/fastapi) and [Tin
 
 for experimental local testing and playing
 
-**don't host it publicly as-is**
+**don't host it publicly as-is. security and privacy features aren't implemented. tinydb can't handle many users.**
 
 ## Instructions
 
-1. Install [python](https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe) with "Add python.exe to PATH" checked
+1. Install [python](https://www.python.org/ftp/python/3.11.5/python-3.11.5-amd64.exe) with "Add python.exe to PATH" checked
 
 1. Run [start.bat (Windows)](start.bat) or [start.sh (Linux)](start.sh)
 
-1. Edit prop/ea3-config.xml services *url* and url_slash *1*
+1. Set services *url* in tools or prop/ea3-config.xml
 
 ## Playable Games
 
@@ -39,7 +39,7 @@ for experimental local testing and playing
 
 ## Troubleshooting
 
-- **URL Slash 1 (On)** must be enabled in tools or ea3-config
+- Set **URL Slash 1 (On)** in tools or ea3-config [if a supported game breaks without it](modules/__init__.py#L44)
 
 - GITADORA requires `mdb_*.xml` copied to the server folder
 
