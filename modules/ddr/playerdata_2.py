@@ -112,8 +112,8 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                     record["ghostid"],
                 ]
 
-        league_name = b64encode(str.encode("Monkey Business")).decode()
-        current_time = round(time.time()) * 1000
+        # league_name = b64encode(str.encode("Monkey Business")).decode()
+        # current_time = round(time.time()) * 1000
 
         response = E.response(
             E.playerdata_2(
@@ -122,9 +122,9 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 E.is_refid_locked(0, __type="bool"),
                 E.eventdata_count_all(0, __type="s16"),
                 E.opt_timing_disp(opt_timing_disp, __type="s32"),
-                E.bpl_season_id(1, __type="s8"),
-                E.bpl_team_id(7, __type="s8"),
-                E.bpl_user_type(1, __type="s8"),
+                # E.bpl_season_id(1, __type="s8"),
+                # E.bpl_team_id(7, __type="s8"),
+                # E.bpl_user_type(1, __type="s8"),
                 *[
                     E.music(
                         E.mcode(int(mcode), __type="u32"),
@@ -159,63 +159,63 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                     E.single_grade(single_grade, __type="u32"),
                     E.double_grade(double_grade, __type="u32"),
                 ),
-                E.golden_league(
-                    E.league_class(3, __type="s32"),
-                    E.current(
-                        E.id(1, __type="s32"),
-                        E.league_name_base64(league_name, __type="str"),
-                        E.start_time(current_time, __type="u64"),
-                        E.end_time(current_time + 1000000000, __type="u64"),
-                        E.summary_time(current_time, __type="u64"),
-                        E.league_status(3, __type="s32"),
-                        E.league_class(2, __type="s32"),
-                        E.league_class_result(3, __type="s32"),
-                        E.ranking_number(1, __type="s32"),
-                        E.total_exscore(99999999, __type="s32"),
-                        E.total_play_count(999, __type="s32"),
-                        E.join_number(1, __type="s32"),
-                        E.promotion_ranking_number(1, __type="s32"),
-                        E.demotion_ranking_number(2, __type="s32"),
-                        E.promotion_exscore(1, __type="s32"),
-                        E.demotion_exscore(1, __type="s32"),
-                        E.league_name_eng_base64(league_name, __type="str"),
-                        E.advance_privilege_lgscore(999, __type="s32"),
-                    ),
-                    E.result(
-                        E.id(1, __type="s32"),
-                        E.league_name_base64(league_name, __type="str"),
-                        E.start_time(current_time, __type="u64"),
-                        E.end_time(current_time + 1000000000, __type="u64"),
-                        E.summary_time(current_time, __type="u64"),
-                        E.league_status(3, __type="s32"),
-                        E.league_class(2, __type="s32"),
-                        E.league_class_result(3, __type="s32"),
-                        E.ranking_number(1, __type="s32"),
-                        E.total_exscore(99999999, __type="s32"),
-                        E.total_play_count(999, __type="s32"),
-                        E.join_number(1, __type="s32"),
-                        E.promotion_ranking_number(1, __type="s32"),
-                        E.demotion_ranking_number(2, __type="s32"),
-                        E.promotion_exscore(1, __type="s32"),
-                        E.demotion_exscore(1, __type="s32"),
-                        E.league_name_eng_base64(league_name, __type="str"),
-                        E.advance_privilege_lgscore(999, __type="s32"),
-                    ),
-                ),
-                E.championship(
-                    E.championship_id(1, __type="s32"),
-                    E.name_base64("", __type="str"),
-                    E.lang(
-                        E.destinationcodes("", __type="str"),
-                        E.name_base64("", __type="str"),
-                    ),
-                    E.music(
-                        E.mcode(0, __type="u32"),
-                        E.notetype(0, __type="s8"),
-                        E.playstyle(0, __type="s32"),
-                    ),
-                ),
-                E.preplayable(),
+                # E.golden_league(
+                #     E.league_class(3, __type="s32"),
+                #     E.current(
+                #         E.id(1, __type="s32"),
+                #         E.league_name_base64(league_name, __type="str"),
+                #         E.start_time(current_time, __type="u64"),
+                #         E.end_time(current_time + 1000000000, __type="u64"),
+                #         E.summary_time(current_time, __type="u64"),
+                #         E.league_status(3, __type="s32"),
+                #         E.league_class(2, __type="s32"),
+                #         E.league_class_result(3, __type="s32"),
+                #         E.ranking_number(1, __type="s32"),
+                #         E.total_exscore(99999999, __type="s32"),
+                #         E.total_play_count(999, __type="s32"),
+                #         E.join_number(1, __type="s32"),
+                #         E.promotion_ranking_number(1, __type="s32"),
+                #         E.demotion_ranking_number(2, __type="s32"),
+                #         E.promotion_exscore(1, __type="s32"),
+                #         E.demotion_exscore(1, __type="s32"),
+                #         E.league_name_eng_base64(league_name, __type="str"),
+                #         E.advance_privilege_lgscore(999, __type="s32"),
+                #     ),
+                #     E.result(
+                #         E.id(1, __type="s32"),
+                #         E.league_name_base64(league_name, __type="str"),
+                #         E.start_time(current_time, __type="u64"),
+                #         E.end_time(current_time + 1000000000, __type="u64"),
+                #         E.summary_time(current_time, __type="u64"),
+                #         E.league_status(3, __type="s32"),
+                #         E.league_class(2, __type="s32"),
+                #         E.league_class_result(3, __type="s32"),
+                #         E.ranking_number(1, __type="s32"),
+                #         E.total_exscore(99999999, __type="s32"),
+                #         E.total_play_count(999, __type="s32"),
+                #         E.join_number(1, __type="s32"),
+                #         E.promotion_ranking_number(1, __type="s32"),
+                #         E.demotion_ranking_number(2, __type="s32"),
+                #         E.promotion_exscore(1, __type="s32"),
+                #         E.demotion_exscore(1, __type="s32"),
+                #         E.league_name_eng_base64(league_name, __type="str"),
+                #         E.advance_privilege_lgscore(999, __type="s32"),
+                #     ),
+                # ),
+                # E.championship(
+                #     E.championship_id(1, __type="s32"),
+                #     E.name_base64("", __type="str"),
+                #     E.lang(
+                #         E.destinationcodes("", __type="str"),
+                #         E.name_base64("", __type="str"),
+                #     ),
+                #     E.music(
+                #         E.mcode(0, __type="u32"),
+                #         E.notetype(0, __type="s8"),
+                #         E.playstyle(0, __type="s32"),
+                #     ),
+                # ),
+                # E.preplayable(),
             )
         )
 
