@@ -76,11 +76,7 @@ async def cardmng_authpass(request: Request):
 async def cardmng_bindmodel(request: Request):
     request_info = await core_process_request(request)
 
-    response = E.response(
-        E.bindmodel(
-            dataid=1,
-        )
-    )
+    response = E.response(E.bindmodel(dataid=1))
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)

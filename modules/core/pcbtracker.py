@@ -1,5 +1,7 @@
 import config
 
+from time import time
+
 from fastapi import APIRouter, Request, Response
 
 from core_common import core_process_request, core_prepare_response, E
@@ -13,10 +15,12 @@ async def pcbtracker_alive(request: Request):
 
     response = E.response(
         E.pcbtracker(
+            status=0,
             expire=1200,
             ecenable=not config.maintenance_mode,
             eclimit=0,
             limit=0,
+            time=int(time()),
         )
     )
 

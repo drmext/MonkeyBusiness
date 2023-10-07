@@ -97,14 +97,15 @@ if __name__ == "__main__":
     for server_services_url in server_services_urls:
         print(f"<services>\033[92m{server_services_url}\033[0m</services>")
     print("<!-- url_slash \033[92m0\033[0m or \033[92m1\033[0m -->")
-    # print('<url_slash __type="bool">\033[92m0\033[0m</url_slash>')
-    # print('<url_slash __type="bool">\033[92m1\033[0m</url_slash>')
     print()
+    print("\033[1mWeb Interface\033[0m:")
     if webui:
-        print("\033[1mWeb Interface\033[0m:")
         for server_address in server_addresses:
             print(f"http://{server_address}/webui/")
-        print()
+    else:
+        print("/webui missing")
+        print("download it here: https://github.com/drmext/BounceTrippy/releases")
+    print()
     print("\033[1mSource Repository\033[0m:")
     print("https://github.com/drmext/MonkeyBusiness")
     print()
@@ -145,20 +146,13 @@ async def services_get(
 
         k = (service.tags[0] if service.tags else service.prefix).strip("/")
         if f == "services.get" or module == "services" and method == "get":
-            if service.prefix == "/core":
-                non_slash_prefix = "/core_fwdr"
-            else:
-                non_slash_prefix = "/fwdr"
-            if k not in services:
-                services[k] = urlunparse(
-                    ("http", request_address, non_slash_prefix, None, None, None)
-                )
-        # url_slash
+            # url_slash 0
+            pre = "/fwdr"
         else:
-            if k not in services:
-                services[k] = urlunparse(
-                    ("http", request_address, service.prefix, None, None, None)
-                )
+            # url_slash 1
+            pre = service.prefix
+        if k not in services:
+            services[k] = urlunparse(("http", request_address, pre, None, None, None))
 
     keepalive_params = {
         "pa": loopback,

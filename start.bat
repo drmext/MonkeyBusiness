@@ -1,32 +1,38 @@
 @echo off
 
+TITLE MB
+
 cd /d %~dp0
 
-if exist .venv\Lib\site-packages\ujson*.pyd (
+if exist .venv\Scripts\activate.bat (
     (
         REM goto :make_venv_portable
         :start_server
-        .venv\Scripts\activate.bat && python pyeamu.py
+        .venv\Scripts\activate.bat
+        python pyeamu.py
     )
 ) else (
     (
         :create_venv
         python -m venv .venv
         .venv\Scripts\activate.bat
-        pip install -U -r requirements.txt
+        python -m pip install -U -r requirements.txt
         python pyeamu.py
     )
 )
 
 echo:
 echo Install python with "Add python.exe to PATH" checked
-echo https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe
+echo https://www.python.org/downloads/
+echo:
+echo Note: Choose the previous version if latest is 3.xx.0
 echo:
 
 pause
 
 goto :eof
 
+REM breaks when special characters are in path
 :make_venv_portable
 set pyvenv="%~dp0.venv\pyvenv.cfg"
 set pyvenvtemp="%~dp0.venv\pyvenv.tmp"

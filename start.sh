@@ -1,18 +1,21 @@
 #!/bin/bash
 
-if ! command -v python3.11 &> /dev/null
+ver="3.11"
+py="python$ver"
+
+if ! command -v $py &> /dev/null
 then
-    echo "python3.11 not found"
+    echo "$py not found"
     exit
 fi
 
-if [ -e .venv/lib/python3.11/site-packages/ujson*.so ]
+if [ -d .venv/ ]
 then
     source .venv/bin/activate
-    python pyeamu.py
+    $py pyeamu.py
 else
-    python3.11 -m venv .venv
+    $py -m venv .venv
     source .venv/bin/activate
-    pip install -U -r requirements.txt
-    python pyeamu.py
+    $py -m pip install -U -r requirements.txt
+    $py pyeamu.py
 fi
