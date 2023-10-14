@@ -150,6 +150,16 @@ async def gitadora_gameinfo_get(ver: str, request: Request):
                 E.term(0, __type="u8"),
             ),
             E.rockwave(E.event_list()),
+            E.livehouse(
+                E.event_list(),
+                E.bonus(
+                    E.term(0, __type="u8"),
+                    E.stage_bonus(0, __type="s32"),
+                    E.charm_bonus(0, __type="s32"),
+                    E.start_date_ms(0, __type="u64"),
+                    E.end_date_ms(0, __type="u64"),
+                ),
+            ),
             E.general_term(),
             E.jubeat_omiyage_challenge(),
             E.kac2017(),
