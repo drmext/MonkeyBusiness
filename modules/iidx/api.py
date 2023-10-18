@@ -109,7 +109,7 @@ async def iidx_profile_id_patch(iidx_id: str, item: IIDX_Profile_Main_Items):
 async def iidx_profile_id_version_patch(
     iidx_id: str, version: int, item: IIDX_Profile_Version_Items
 ):
-    if version != 30:
+    if version < 30:
         # TODO: differentiate 18, 19, 20, 29, 30
         return Response(status_code=406)
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
