@@ -106,35 +106,7 @@ async def iidx31pc_get(request: Request):
         rivals[idx]["hand"] = rival_profile["hand"]
         rivals[idx]["head"] = rival_profile["head"]
 
-    current_time = round(time())
-
-    skins = [
-        calculate_folder_mask(profile),
-        profile["explosion"],
-        profile["explosion_size"],
-        profile["turntable"],
-        profile["judgestring"],
-        profile["note"],
-        0,
-        profile["soundpreview"],
-        0,
-        profile["effector_type"],
-        profile["bgm"],
-        profile["alternate_hcn"],
-        profile["kokokara_start"],
-        profile["sudden"],
-        profile["grapharea"],
-        0,
-        profile["keybeam"],
-        0,
-        profile["fullcombo"],
-        0,
-    ]
-    # unknown:
-    # profile["judge_pos"],
-    # profile["categoryvoice"],
-    # profile["frame"],
-    # profile["effector_lock"],
+    # current_time = round(time())
 
     response = E.response(
         E.IIDX31pc(
@@ -225,12 +197,33 @@ async def iidx31pc_get(request: Request):
                 __size=5 * 4,
             ),
             E.skin(
-                skins,
+                [
+                    calculate_folder_mask(profile),
+                    profile["explosion"],
+                    profile["explosion_size"],
+                    profile["turntable"],
+                    profile["judgestring"],
+                    profile["note"],
+                    profile.get("note_size", 0),
+                    profile["soundpreview"],
+                    profile["effector_lock"],
+                    profile["effector_type"],
+                    profile["bgm"],
+                    profile["alternate_hcn"],
+                    profile["kokokara_start"],
+                    profile["sudden"],
+                    profile["grapharea"],
+                    profile.get("lift", 0),
+                    profile["keybeam"],
+                    profile.get("keybeam_size", 1),
+                    profile["fullcombo"],
+                    0,
+                ],
                 __type="s16",
             ),
             E.tdjskin(
                 [
-                    0,
+                    profile.get("submonitor", 0),
                     0,
                     0,
                     0,
@@ -238,33 +231,26 @@ async def iidx31pc_get(request: Request):
                 __type="s16",
             ),
             E.skin_customize_flg(
-                skin_frame_flg=0,
-                skin_turntable_flg=0,
-                skin_bomb_flg=0,
-                skin_bgm_flg=0,
-                skin_lane_flg0=0,
-                skin_lane_flg1=0,
-                skin_lane_flg2=0,
-                skin_lane_flg3=0,
-                skin_lane_flg4=0,
-                skin_lane_flg5=0,
-                skin_notes_flg=0,
-                skin_fullcombo_flg=0,
-                skin_keybeam_flg=0,
-                skin_judgestring_flg=0,
+                skin_frame_flg=-1,
+                skin_turntable_flg=-1,
+                skin_bomb_flg=-1,
+                skin_bgm_flg=-1,
+                skin_lane_flg0=-1,
+                skin_lane_flg1=-1,
+                skin_lane_flg2=-1,
+                skin_lane_flg3=-1,
+                skin_lane_flg4=-1,
+                skin_lane_flg5=-1,
+                skin_notes_flg=-1,
+                skin_fullcombo_flg=-1,
+                skin_keybeam_flg=-1,
+                skin_judgestring_flg=-1,
                 # skin_bgm_flg=profile["skin_customize_flag_bgm"],
                 # skin_lane_flg3=profile["skin_customize_flag_lane"],
             ),
             E.tdjskin_customize_flg(
-                skin_submonitor_flg=0,
+                skin_submonitor_flg=-1,
             ),
-            # *[
-            #    E.skin_equip(
-            #        skin_id=idx,
-            #        skin_num=skin,
-            #    )
-            #    for idx, skin in enumerate(skins)
-            # ],
             E.spdp_rival(
                 flg=-1
             ),  # required for rivals to load after switching spdp in music select
@@ -568,6 +554,23 @@ async def iidx31pc_get(request: Request):
                     )
                 ),
             ),
+            E.music_memo(
+                *[
+                    E.folder(
+                        E.music_id(
+                            profile.get(f"music_memo_{fi}_{ps}_mids", [0] * 10),
+                            __type="s32",
+                        ),
+                        play_style=ps,
+                        folder_id=fi,
+                        name=profile.get(
+                            f"music_memo_{fi}_{ps}_name", f"FOLDER {str(fi+1).zfill(2)}"
+                        ),
+                    )
+                    for fi in range(10)
+                    for ps in range(2)
+                ],
+            ),
             # ),
             # E.event_1(
             #     E.flyer_data(
@@ -828,13 +831,13 @@ async def iidx31pc_common(request: Request):
             E.play_video(),
             E.music_retry(),
             E.world_tourism(open_list=1),
-            E.bpl_battle(phase=1),
+            # E.bpl_battle(phase=1),
             E.display_asio_logo(),
             # E.force_rom_check(),
             E.lane_gacha(),
             # E.fps_fix(),
             # E.save_unsync_log(),
-            E.tourism_booster(),
+            # E.tourism_booster(),
             expire=600,
         )
     )
@@ -955,6 +958,17 @@ async def iidx31pc_save(request: Request):
         if concentration is not None:
             game_profile["lightning_setting_concentration"] = int(concentration.text)
 
+    music_memo = request_info["root"][0].find("music_memo")
+    if music_memo is not None:
+        folders = music_memo.findall("folder")
+        for f in folders:
+            fi = f.attrib["folder_id"]
+            fn = f.attrib["name"]
+            ps = f.attrib["play_style"]
+            mids = [int(x) for x in f.find("music_id").text.split(" ")]
+            game_profile[f"music_memo_{fi}_{ps}_name"] = fn
+            game_profile[f"music_memo_{fi}_{ps}_mids"] = mids
+
     # lightning_customize_flg = request_info["root"][0].find("lightning_customize_flg")
     # if lightning_customize_flg is not None:
     #    for k in [
@@ -1014,6 +1028,37 @@ async def iidx31pc_save(request: Request):
         game_profile["dj_rank_" + ["single", "double"][style] + "_point"] = [
             int(x) for x in point.text.split(" ")
         ]
+
+    skin_equips = request_info["root"][0].findall("skin_equip")
+    skin_equips = [] if skin_equips is None else skin_equips
+    skin = {
+        1: "explosion",
+        2: "explosion_size",
+        3: "turntable",
+        4: "judgestring",
+        5: "note",
+        6: "note_size",
+        13: "sudden",
+        14: "grapharea",
+        15: "lift",
+        16: "keybeam",
+        17: "keybeam_size",
+        18: "fullcombo",
+    }
+    for skin_equip in skin_equips:
+        skin_id = int(skin_equip.attrib["skin_id"])
+        if skin_id in skin:
+            game_profile[skin[skin_id]] = int(skin_equip.attrib["skin_no"])
+
+    tdjskin_equips = request_info["root"][0].findall("tdjskin_equip")
+    tdjskin_equips = [] if tdjskin_equips is None else tdjskin_equips
+    tdjskin = {
+        0: "submonitor",
+    }
+    for tdjskin_equip in tdjskin_equips:
+        skin_id = int(tdjskin_equip.attrib["skin_id"])
+        if skin_id in tdjskin:
+            game_profile[tdjskin[skin_id]] = int(tdjskin_equip.attrib["skin_no"])
 
     notes_radars = request_info["root"][0].findall("notes_radar")
     notes_radars = [] if notes_radars is None else notes_radars
@@ -1146,9 +1191,13 @@ async def iidx31pc_reg(request: Request):
         "judgestring": 0,
         "soundpreview": 0,
         "grapharea": 0,
+        "lift": 0,
         "effector_lock": 0,
         "effector_type": 0,
         "explosion_size": 0,
+        "note_size": 0,
+        "keybeam_size": 0,
+        "submonitor": 0,
         "alternate_hcn": 0,
         "kokokara_start": 0,
         "d_auto_adjust": 0,

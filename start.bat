@@ -4,21 +4,16 @@ TITLE MB
 
 cd /d %~dp0
 
-if exist .venv\Scripts\activate.bat (
-    (
-        REM goto :make_venv_portable
-        :start_server
-        .venv\Scripts\activate.bat
-        python pyeamu.py
-    )
-) else (
-    (
-        :create_venv
-        python -m venv .venv
-        .venv\Scripts\activate.bat
-        python -m pip install -U -r requirements.txt
-        python pyeamu.py
-    )
+REM goto :make_venv_portable
+
+if not exist .venv\Scripts\activate.bat (
+    python -m venv .venv
+)
+
+(
+    .venv\Scripts\activate.bat
+    python -m pip install -r requirements.txt
+    python pyeamu.py
 )
 
 echo:
@@ -72,4 +67,3 @@ setlocal enabledelayedexpansion
 endlocal
 del %activate%
 rename "%activatetemp%" activate.bat
-goto :start_server

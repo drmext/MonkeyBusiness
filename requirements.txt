@@ -1,5 +1,5 @@
 fastapi
-kbinxml
+kbinxml>=2.0
 pycryptodomex
 python-multipart
 tinydb

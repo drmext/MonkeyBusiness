@@ -139,7 +139,7 @@ async def core_process_request(request):
     if request.compress == "lz77":
         xml_dec = EamuseLZ77.decode(xml_dec)
 
-    xml = KBinXML(xml_dec)
+    xml = KBinXML(xml_dec, convert_illegal_things=True)
     root = xml.xml_doc
     xml_text = xml.to_text()
     request.is_binxml = KBinXML.is_binary_xml(xml_dec)
