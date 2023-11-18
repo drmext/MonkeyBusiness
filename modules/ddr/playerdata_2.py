@@ -93,10 +93,6 @@ async def playerdata_2_usergamedata_advanced(request: Request):
             ddr_id = all_profiles_for_card["ddr_id"]
             profile = get_game_profile(refid, game_version)
 
-            single_grade = profile.get("single_grade", 0)
-            double_grade = profile.get("double_grade", 0)
-            opt_timing_disp = profile.get("opt_timing_disp", -1)
-
             for record in db.table("ddr_scores_best").search(
                 (where("game_version") == game_version) & (where("ddr_id") == ddr_id)
             ):
@@ -113,7 +109,7 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 ]
 
         # league_name = b64encode(str.encode("Monkey Business")).decode()
-        # current_time = round(time.time()) * 1000
+        # current_time = round(time.time() * 1000)
 
         response = E.response(
             E.playerdata_2(
@@ -121,7 +117,7 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 E.is_new(1 if all_profiles_for_card is None else 0, __type="bool"),
                 E.is_refid_locked(0, __type="bool"),
                 E.eventdata_count_all(0, __type="s16"),
-                E.opt_timing_disp(opt_timing_disp, __type="s32"),
+                E.opt_timing_disp(profile.get("opt_timing_disp", -1), __type="s32"),
                 # E.bpl_season_id(1, __type="s8"),
                 # E.bpl_team_id(7, __type="s8"),
                 # E.bpl_user_type(1, __type="s8"),
@@ -152,12 +148,14 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                         E.savedata(0, __type="s64"),
                     )
                     for event in [
-                        e for e in range(1, 100) if e not in [4, 6, 7, 8, 14, 47]
+                        e
+                        for e in range(1, 100)
+                        if e not in [4, 6, 7, 8, 14, 47, 89, 90]
                     ]
                 ],
                 E.grade(
-                    E.single_grade(single_grade, __type="u32"),
-                    E.double_grade(double_grade, __type="u32"),
+                    E.single_grade(profile.get("single_grade", 0), __type="u32"),
+                    E.double_grade(profile.get("double_grade", 0), __type="u32"),
                 ),
                 # E.golden_league(
                 #     E.league_class(3, __type="s32"),
@@ -215,7 +213,9 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 #         E.playstyle(0, __type="s32"),
                 #     ),
                 # ),
-                # E.preplayable(),
+                E.pre_playable(
+                    E.pre_playable_id("0", __type="str"),
+                ),
             )
         )
 
