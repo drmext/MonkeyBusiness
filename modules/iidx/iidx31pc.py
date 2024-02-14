@@ -62,6 +62,7 @@ def calculate_folder_mask(profile):
 async def iidx31pc_get(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info["game_version"]
+    date_code = int(request_info["ext"])
 
     cid = request_info["root"][0].attrib["cid"]
     profile = get_game_profile(cid, game_version)
@@ -219,7 +220,7 @@ async def iidx31pc_get(request: Request):
                     profile["fullcombo"],
                     0,
                 ],
-                __type="s16",
+                __type="s32" if date_code >= 2024011600 else "s16",
             ),
             E.tdjskin(
                 [
@@ -301,6 +302,9 @@ async def iidx31pc_get(request: Request):
                 E.flg1(profile.get("wt_flg1", [-1, -1, -1]), __type="s64"),
                 E.flg2(profile.get("wt_flg2", [-1, -1, -1]), __type="s64"),
             ),
+            E.world_tourism_setting(
+                E.booster(1, __type="bool"),
+            ),
             E.world_tourism(
                 *[
                     E.tour_data(
@@ -340,6 +344,8 @@ async def iidx31pc_get(request: Request):
                     play_style=0,
                     arena_class=19,
                     rating_value=90,
+                    now_top_class_continuing=19,
+                    best_top_class_continuing=19,
                     win_count=0,
                     now_winning_streak_count=0,
                     best_winning_streak_count=0,
@@ -351,6 +357,8 @@ async def iidx31pc_get(request: Request):
                     play_style=1,
                     arena_class=19,
                     rating_value=90,
+                    now_top_class_continuing=19,
+                    best_top_class_continuing=19,
                     win_count=0,
                     now_winning_streak_count=0,
                     best_winning_streak_count=0,
@@ -399,10 +407,11 @@ async def iidx31pc_get(request: Request):
                     rank4=3,
                     rank5=1,
                 ),
-                E.player_kind_data(
-                    kind=(random.choice([random.randint(0, 13), 0])),
-                ),
+                #E.player_kind_data(
+                #    kind=(random.choice([random.randint(0, 13), 0])),
+                #),
                 E.setting(
+                    E.hide_shopname(0, __type="bool"),
                     stats_type=0,
                 ),
                 E.qpro_motion(
@@ -424,6 +433,9 @@ async def iidx31pc_get(request: Request):
             E.nostalgia_open(),
             E.language_setting(language=profile["language_setting"]),
             E.movie_agreement(agreement_version=profile["movie_agreement"]),
+            E.movie_setting(
+                E.hide_name(0, __type="bool"),
+            ),
             E.bpl_virtual(),
             E.lightning_play_data(
                 spnum=profile["lightning_play_data_spnum"],
@@ -442,10 +454,14 @@ async def iidx31pc_get(request: Request):
             E.kac_entry_info(
                 E.enable_kac_deller(),
                 E.disp_kac_mark(),
-                E.open_kac_common_music(),
-                E.open_kac_new_a12_music(),
                 E.is_kac_entry(),
                 E.is_kac_evnet_entry(),
+                E.kac_secret_music(
+                    E.music_info(
+                        index=0,
+                        music_id=1000,
+                    ),
+                ),
             ),
             E.orb_data(
                 rest_orb=100,
