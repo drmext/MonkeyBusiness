@@ -603,7 +603,7 @@ async def playerdata_usergamedata_recv(request: Request):
 
         common = profile["common"].split(",")
         common[5] = calories_disp.index(profile["calories_disp"])
-        common[6] = character.index(profile["character"])
+        common[6] = f'{character.index(profile["character"]):x}'
         common[9] = 1  # Mobile link
         common_load = ",".join([str(i) for i in common])
 
