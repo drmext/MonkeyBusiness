@@ -53,27 +53,28 @@ async def core_get_game_version_from_software_version(software_version):
     if model == "LDJ":
         if ext >= 2023101800:
             return 31
-        elif ext in range(2022101700, 2023101700):
+        elif ext >= 2022101700:
             return 30
-        elif ext in range(2021101300, 2022101500):
+        elif ext >= 2021101300:
             return 29
-        elif ext in range(2020102800, 2021100601):
+        # TODO: Consolidate IIDX modules to easily support versions 21-28 (probably never)
+        elif ext >= 2020102800:
             return 28
-        elif ext in range(2019101600, 2020102201):
+        elif ext >= 2019101600:
             return 27
-        elif ext in range(2018110700, 2019100701):
+        elif ext >= 2018110700:
             return 26
-        elif ext in range(2017122100, 2018103101):
+        elif ext >= 2017122100:
             return 25
-        elif ext in range(2016102400, 2017082801):
+        elif ext >= 2016102400:
             return 24
-        elif ext in range(2015111100, 2016102001):
+        elif ext >= 2015111100:
             return 23
-        elif ext in range(2014091700, 2015080501):
+        elif ext >= 2014091700:
             return 22
-        elif ext in range(2013100200, 2014071601):
+        elif ext >= 2013100200:
             return 21
-        elif ext in range(2012091900, 2013090901):
+        elif ext >= 2012010100:
             return 20
     elif model == "KDZ":
         return 19
@@ -81,7 +82,9 @@ async def core_get_game_version_from_software_version(software_version):
         return 18
 
     elif model == "M32":
-        if ext >= 2022121400:
+        if ext >= 2024031300:
+            return 10
+        elif ext >= 2022121400:
             return 9
         elif ext >= 2021042100:
             return 8
@@ -89,15 +92,16 @@ async def core_get_game_version_from_software_version(software_version):
             return 7
         elif ext >= 2018072700:
             return 6
+        # TODO: Support versions 1-5 (never)
         elif ext >= 2017090600:
             return 5
         elif ext >= 2017011800:
             return 4
-        elif ext in range(2015042100, 2016112302):
+        elif ext >= 2015042100:
             return 3
-        elif ext in range(2014021400, 2015032702):
+        elif ext >= 2014021400:
             return 2
-        elif ext in range(2013012400, 2014011601):
+        elif ext >= 2013012400:
             return 1
 
     elif model == "MDX":
@@ -105,11 +109,16 @@ async def core_get_game_version_from_software_version(software_version):
             return 19
 
     elif model == "KFC":
+        # TODO: Fix newer than 2022 versions (never, I don't play this game)
         if ext >= 2020090402:  # ???
             return 6
 
     elif model == "REC":
         return 1
+
+    # TODO: ???
+    # elif model == "PAN":
+    #     return 0
 
     else:
         return 0

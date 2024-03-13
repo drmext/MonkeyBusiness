@@ -18,7 +18,7 @@ async def gitadora_gameinfo_get(ver: str, request: Request):
             f"{ver}_gameinfo",
             E.now_date(round(time.time()), __type="u64"),
             E.extra(
-                E.extra_lv(0, __type="u8"),
+                E.extra_lv(0, __type="s32" if game_version >= 10 else "u8"),
                 E.extramusic(
                     E.music(
                         E.musicid(0, __type="s32"),
@@ -30,7 +30,7 @@ async def gitadora_gameinfo_get(ver: str, request: Request):
                 *[
                     E.termdata(
                         E.type(f"general_{s}", __type="str"),
-                        E.term(1, __type="u8"),
+                        E.term(1, __type="s32" if game_version >= 10 else "u8"),
                         E.start_date_ms(0, __type="u64"),
                         E.end_date_ms(0, __type="u64"),
                     )
@@ -124,19 +124,19 @@ async def gitadora_gameinfo_get(ver: str, request: Request):
                 E.term(1, __type="u8"),
             ),
             E.unlock_challenge(
-                E.term(0, __type="u8"),
+                E.term(0, __type="s32" if game_version >= 10 else "u8"),
             ),
             E.battle(
-                E.term(1, __type="u8"),
+                E.term(1, __type="s32" if game_version >= 10 else "u8"),
             ),
             E.battle_chara(
-                E.term(1, __type="u8"),
+                E.term(1, __type="s32" if game_version >= 10 else "u8"),
             ),
             E.data_ver_limit(
                 E.term(0, __type="s32" if game_version >= 9 else "u8"),
             ),
             E.ea_pass_propel(
-                E.term(0, __type="u8"),
+                E.term(0, __type="s32" if game_version >= 10 else "u8"),
             ),
             E.monthly_skill(
                 E.term(0, __type="u8"),
@@ -147,7 +147,7 @@ async def gitadora_gameinfo_get(ver: str, request: Request):
                 ),
             ),
             E.update_prog(
-                E.term(0, __type="u8"),
+                E.term(0, __type="s32" if game_version >= 10 else "u8"),
             ),
             E.rockwave(E.event_list()),
             E.livehouse(

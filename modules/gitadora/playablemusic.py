@@ -40,7 +40,9 @@ async def gitadora_playablemusic_get(ver: str, request: Request):
         }
     }
 
-    if ver == "fuzzup":
+    if ver == "galaxywave":
+        short_ver = "gw"
+    elif ver == "fuzzup":
         short_ver = "fz"
     elif ver == "highvoltage":
         short_ver = "hv"
