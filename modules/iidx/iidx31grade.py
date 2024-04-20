@@ -89,13 +89,19 @@ async def iidx31grade_raised(request: Request):
     game_profile["grade_values"] = grades
 
     grade_sp = db.table("iidx_class_best").search(
-        (where("iidx_id") == iidx_id) & (where("gtype") == 0) & (where("cstage") == 4)
+        (where("game_version") == game_version)
+        & (where("iidx_id") == iidx_id)
+        & (where("gtype") == 0)
+        & (where("cstage") == 4)
     )
 
     game_profile["grade_single"] = max([x["gid"] for x in grade_sp], default=-1)
 
     grade_dp = db.table("iidx_class_best").search(
-        (where("iidx_id") == iidx_id) & (where("gtype") == 1) & (where("cstage") == 4)
+        (where("game_version") == game_version)
+        & (where("iidx_id") == iidx_id)
+        & (where("gtype") == 1)
+        & (where("cstage") == 4)
     )
 
     game_profile["grade_double"] = max([x["gid"] for x in grade_dp], default=-1)

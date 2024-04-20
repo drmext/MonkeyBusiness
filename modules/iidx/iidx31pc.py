@@ -101,6 +101,7 @@ async def iidx31pc_get(request: Request):
         rivals[idx]["sg"] = rival_profile["grade_single"]
         rivals[idx]["da"] = rival_profile["dach"]
         rivals[idx]["dg"] = rival_profile["grade_double"]
+        rivals[idx]["back"] = rival_profile.get("back", 0)
         rivals[idx]["body"] = rival_profile["body"]
         rivals[idx]["face"] = rival_profile["face"]
         rivals[idx]["hair"] = rival_profile["hair"]
@@ -225,7 +226,7 @@ async def iidx31pc_get(request: Request):
             E.tdjskin(
                 [
                     profile.get("submonitor", 0),
-                    0,
+                    profile.get("subbg", 0),
                     0,
                     0,
                 ],
@@ -246,11 +247,10 @@ async def iidx31pc_get(request: Request):
                 skin_fullcombo_flg=-1,
                 skin_keybeam_flg=-1,
                 skin_judgestring_flg=-1,
-                # skin_bgm_flg=profile["skin_customize_flag_bgm"],
-                # skin_lane_flg3=profile["skin_customize_flag_lane"],
             ),
             E.tdjskin_customize_flg(
                 skin_submonitor_flg=-1,
+                skin_subbg_flg=-1,
             ),
             E.spdp_rival(
                 flg=-1
@@ -261,6 +261,7 @@ async def iidx31pc_get(request: Request):
                         E.is_robo(0, __type="bool"),
                         E.shop(name=config.arcade),
                         E.qprodata(
+                            back=rivals[r]["back"],
                             body=rivals[r]["body"],
                             face=rivals[r]["face"],
                             hair=rivals[r]["hair"],
@@ -336,6 +337,7 @@ async def iidx31pc_get(request: Request):
                     "lightning_setting_resistance_dp_right", 0
                 ),
                 keyboard_kind=profile.get("lightning_setting_keyboard_kind", 0),
+                brightness=profile.get("lightning_setting_brightness", 0),
             ),
             E.arena_data(
                 E.achieve_data(
@@ -405,9 +407,9 @@ async def iidx31pc_get(request: Request):
                     rank4=3,
                     rank5=1,
                 ),
-                #E.player_kind_data(
+                # E.player_kind_data(
                 #    kind=(random.choice([random.randint(0, 13), 0])),
-                #),
+                # ),
                 E.setting(
                     E.hide_shopname(0, __type="bool"),
                     stats_type=0,
@@ -426,9 +428,9 @@ async def iidx31pc_get(request: Request):
             E.bind_eaappli(),
             E.ea_premium_course(),
             E.language_setting(language=profile["language_setting"]),
-            E.movie_agreement(agreement_version=profile["movie_agreement"]),
+            E.movie_agreement(agreement_version=profile.get("movie_agreement", 0)),
             E.movie_setting(
-                E.hide_name(0, __type="bool"),
+                E.hide_name(profile.get("hide_name", 0), __type="bool"),
             ),
             E.lightning_play_data(
                 spnum=profile["lightning_play_data_spnum"],
@@ -761,6 +763,7 @@ async def iidx31pc_get(request: Request):
             #         slot=2,
             #     ),
             # ),
+            qproback=profile.get("back", 0),
         )
     )
 
@@ -771,6 +774,13 @@ async def iidx31pc_get(request: Request):
 @router.post("/{gameinfo}/IIDX31pc/common")
 async def iidx31pc_common(request: Request):
     request_info = await core_process_request(request)
+    game_version = request_info["game_version"]
+
+    db = get_db()
+    all_score_stats = db.table("iidx_score_stats").search(
+        (where("music_id") < (game_version + 1) * 1000)
+    )
+    hits = sorted(all_score_stats, key=lambda d: d["play_count"], reverse=True)[:10]
 
     response = E.response(
         E.IIDX31pc(
@@ -799,7 +809,7 @@ async def iidx31pc_common(request: Request):
             E.movie_agreement(version=1),
             E.license("None", __type="str"),
             E.file_recovery(url=str(config.ip)),
-            E.movie_upload(url=str(config.ip)),
+            E.movie_upload(url=f"http://{str(config.ip)}:4399/movie/"),
             # E.button_release_frame(frame=''),
             # E.trigger_logic_type(type=''),
             # E.cm_movie_info(type=''),
@@ -814,7 +824,21 @@ async def iidx31pc_common(request: Request):
             E.music_retry(),
             E.display_asio_logo(),
             # E.force_rom_check(),
-            # E.hitchart(),
+            *[
+                E.hitchart(
+                    *[
+                        E.ranking(
+                            music_id=hit["music_id"],
+                            rank=idx,
+                        )
+                        for idx, hit in enumerate(hits, start=1)
+                    ],
+                    kind=k,  # 0=national, 1=facility
+                    period=p,  # 0=all, 1=monthly, 2=weekly
+                )
+                for k in range(2)
+                for p in range(3)
+            ],
             E.lane_gacha(),
             # E.fps_fix(),
             # E.save_unsync_log(),
@@ -923,8 +947,12 @@ async def iidx31pc_save(request: Request):
             "resistance_sp_left",
             "resistance_sp_right",
             "keyboard_kind",
+            "brightness",
         ]:
-            game_profile["lightning_setting_" + k] = int(lightning_setting.attrib[k])
+            if k in lightning_setting.attrib:
+                game_profile["lightning_setting_" + k] = int(
+                    lightning_setting.attrib[k]
+                )
 
         slider = lightning_setting.find("slider")
         if slider is not None:
@@ -952,6 +980,16 @@ async def iidx31pc_save(request: Request):
             mids = [int(x) for x in f.find("music_id").text.split(" ")]
             game_profile[f"music_memo_{fi}_{ps}_name"] = fn
             game_profile[f"music_memo_{fi}_{ps}_mids"] = mids
+
+    movie_agreement = request_info["root"][0].find("movie_agreement")
+    if movie_agreement is not None and "agreement_version" in movie_agreement.attrib:
+        game_profile["movie_agreement"] = int(
+            movie_agreement.attrib["agreement_version"]
+        )
+
+    hide_name = request_info["root"][0].find("movie_setting/hide_name")
+    if hide_name is not None:
+        game_profile["hide_name"] = int(hide_name.text)
 
     # lightning_customize_flg = request_info["root"][0].find("lightning_customize_flg")
     # if lightning_customize_flg is not None:
@@ -1038,6 +1076,7 @@ async def iidx31pc_save(request: Request):
     tdjskin_equips = [] if tdjskin_equips is None else tdjskin_equips
     tdjskin = {
         0: "submonitor",
+        1: "subbg",
     }
     for tdjskin_equip in tdjskin_equips:
         skin_id = int(tdjskin_equip.attrib["skin_id"])
@@ -1161,6 +1200,7 @@ async def iidx31pc_reg(request: Request):
         "face": 0,
         "hand": 0,
         "body": 0,
+        "back": 0,
         "frame": 0,
         "turntable": 0,
         "explosion": 0,
@@ -1182,6 +1222,7 @@ async def iidx31pc_reg(request: Request):
         "note_size": 0,
         "keybeam_size": 0,
         "submonitor": 0,
+        "subbg": 0,
         "alternate_hcn": 0,
         "kokokara_start": 0,
         "d_auto_adjust": 0,
@@ -1291,6 +1332,7 @@ async def iidx31pc_reg(request: Request):
         # Other
         "language_setting": 0,
         "movie_agreement": 0,
+        "hide_name": 0,
         "lightning_play_data_spnum": 0,
         "lightning_play_data_dpnum": 0,
         # Lightning model settings
@@ -1302,6 +1344,7 @@ async def iidx31pc_reg(request: Request):
         "lightning_setting_resistance_sp_right": 0,
         "lightning_setting_resistance_dp_left": 0,
         "lightning_setting_resistance_dp_right": 0,
+        "lightning_setting_brightness": 0,
         "lightning_setting_skin_0": 0,
         "lightning_setting_flg_skin_0": 0,
         # Web UI/Other options
@@ -1428,6 +1471,36 @@ async def iidx31pc_drawlanegacha(request: Request):
 
 @router.post("/{gameinfo}/IIDX31pc/eaappliresult")
 async def iidx31pc_eaappliresult(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX31pc())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX31pc/playstart")
+async def iidx31pc_playstart(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX31pc())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX31pc/playend")
+async def iidx31pc_playend(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX31pc())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX31pc/delete")
+async def iidx31pc_delete(request: Request):
     request_info = await core_process_request(request)
 
     response = E.response(E.IIDX31pc())

@@ -186,6 +186,7 @@ async def iidx31gamesystem_systeminfo(request: Request):
             E.CommonBossPhase(val=0),
             E.Event1Phase(val=0),
             E.Event1Value(val=0),
+            E.ExtraBossEventPhase(val=0),
             E.isNewSongAnother12OpenFlg(val=1),
             E.isKiwamiOpenFlg(val=1),
             E.WorldTourismOpenList(val=-1),

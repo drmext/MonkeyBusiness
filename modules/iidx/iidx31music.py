@@ -348,6 +348,7 @@ async def iidx31music_reg(request: Request):
                 "opname": config.arcade,
                 "name": game_profile["djname"],
                 "pid": game_profile["region"],
+                "back": game_profile.get("back", 0),
                 "body": game_profile["body"],
                 "face": game_profile["face"],
                 "hair": game_profile["hair"],
@@ -373,6 +374,7 @@ async def iidx31music_reg(request: Request):
             opname=score["opname"],
             name=score["name"],
             pid=score["pid"],
+            back=score["back"],
             body=score["body"],
             face=score["face"],
             hair=score["hair"],
@@ -553,6 +555,26 @@ async def iidx31music_retry(request: Request):
             status=0,
         )
     )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX31music/play")
+async def iidx31music_play(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX31music())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX31music/nosave")
+async def iidx31music_nosave(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX31music())
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
