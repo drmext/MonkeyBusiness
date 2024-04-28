@@ -485,7 +485,7 @@ async def iidx31music_appoint(request: Request):
 
 
 @router.post("/{gameinfo}/IIDX31music/arenaCPU")
-async def iidx31music_arenaCPU(request: Request):
+async def iidx31music_arenacpu(request: Request):
     request_info = await core_process_request(request)
 
     root = request_info["root"][0]
@@ -494,21 +494,19 @@ async def iidx31music_arenaCPU(request: Request):
     cpu_list = root.findall("cpu_list")
     cpu_count = len(cpu_list)
 
-    cpu_scores = {}
-    cpu_ghosts = {}
+    cpu = {}
+
     for music in music_list:
-        i = int(music.find("index").text)
+        music_idx = int(music.find("index").text)
         exscore_max = int(music.find("total_notes").text) * 2
 
-        cpu_scores[i] = {}
-        cpu_ghosts[i] = {}
+        cpu[music_idx] = {}
 
-        for j in range(cpu_count):
-            cpu_scores[i][j] = {}
-            cpu_ghosts[i][j] = {}
+        for bot_idx in range(cpu_count):
+            cpu[music_idx][bot_idx] = {}
 
             exscore = round(exscore_max * random.uniform(0.77, 0.93))
-            cpu_scores[i][j]["exscore"] = exscore
+            cpu[music_idx][bot_idx]["exscore"] = exscore
 
             ghost_len = 64
             ghost_data = [0] * ghost_len
@@ -517,26 +515,26 @@ async def iidx31music_arenaCPU(request: Request):
                 if (exscore % ghost_len) > x:
                     ghost_data[x] += 1
 
-            cpu_ghosts[i][j]["ghost_data"] = ghost_data
+            cpu[music_idx][bot_idx]["ghost_data"] = ghost_data
 
     response = E.response(
         E.IIDX31music(
             *[
                 E.cpu_score_list(
-                    E.index(i, __type="s32"),
+                    E.index(bot_idx, __type="s32"),
                     *[
                         E.score_list(
-                            E.index(j, __type="s32"),
-                            E.score(cpu_scores[i][j]["exscore"], __type="s32"),
-                            E.ghost(cpu_ghosts[i][j]["ghost_data"], __type="u8"),
+                            E.index(music_idx, __type="s32"),
+                            E.score(cpu[music_idx][bot_idx]["exscore"], __type="s32"),
+                            E.ghost(cpu[music_idx][bot_idx]["ghost_data"], __type="s8"),
                             E.enable_score(1, __type="bool"),
                             E.enable_ghost(1, __type="bool"),
                             E.location_id("X000000001", __type="str"),
                         )
-                        for j in range(cpu_count)
+                        for music_idx in range(music_count)
                     ],
                 )
-                for i in range(music_count)
+                for bot_idx in range(cpu_count)
             ],
         )
     )
