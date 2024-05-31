@@ -111,6 +111,7 @@ async def gitadora_playablemusic_get(ver: str, request: Request):
                             __type="bool",
                         ),
                         E.data_ver(songs[s]["data_ver"], __type="s32"),
+                        E.seq_release_state(1, __type="s32"),
                         E.diff(songs[s]["xg_diff_list"], __type="u16"),
                     )
                     for s in songs
