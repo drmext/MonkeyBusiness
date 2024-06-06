@@ -186,11 +186,13 @@ async def iidx31gamesystem_systeminfo(request: Request):
             E.CommonBossPhase(val=0),
             E.Event1Phase(val=0),
             E.Event1Value(val=0),
+            E.Event2Phase(val=0),
             E.ExtraBossEventPhase(val=0),
             E.isNewSongAnother12OpenFlg(val=1),
             E.isKiwamiOpenFlg(val=1),
             E.WorldTourismOpenList(val=-1),
             E.OldBPLBattleOpenPhase(val=3),
+            E.BPLBattleOpenPhase(val=3),
             E.UnlockLeggendaria(val=1),
             E.Event1AllPlayerTotalGetMetron(val=0),
         )
