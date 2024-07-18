@@ -234,6 +234,12 @@ async def gitadora_gametop_get(ver: str, request: Request):
                 ),
                 E.event_score(E.event_list()),
                 E.rockwave(E.score_list()),
+                E.deluxe(
+                    E.deluxe_content(0, __type="s32"),
+                    E.target_id(0, __type="s32"),
+                    E.multiply(0, __type="s32"),
+                    E.point(0, __type="s32"),
+                ),
                 E.livehouse(E.score_list(E.last_livehouse(0, __type="s32"))),
                 E.jubeat_omiyage_challenge(),
                 E.light_mode_reward_item(
