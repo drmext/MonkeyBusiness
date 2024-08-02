@@ -70,7 +70,8 @@ async def game_sv6_common(request: Request):
         "CREW_SELECT_ABLE",
         "PREMIUM_TIME_ENABLE",
         "OMEGA_ENABLE\t1,2,3,4,5,6,7,8,9",
-        "HEXA_ENABLE\t1,2,3,4,5,6,7",
+        "HEXA_ENABLE\t1,2,3,4,5,6,7,8,9",
+        "HEXA_OVERDRIVE_ENABLE\t8",
         "MEGAMIX_ENABLE",
         "VALGENE_ENABLE",
         "ARENA_ENABLE",
@@ -84,11 +85,13 @@ async def game_sv6_common(request: Request):
         "S_PUC_EFFECT_ENABLE",
         "SUPER_RANDOM_ACTIVE",
         "PLAYER_RADAR_ENABLE",
-        "SINGLE_BATTLE_ENABLE",
+        "APRIL_RAINBOW_LINE_ACTIVE",
+        "USE_CUDA_VIDEO_PRESENTER",
+        "CHARACTER_IGNORE_DISABLE\t122,123,131,139,140,143,149,160",
     ]
 
     unlock = []
-    for i in range(3000):
+    for i in range(2800):
         for j in range(0, 5):
             unlock.append([i, j])
 
