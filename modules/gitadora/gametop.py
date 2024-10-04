@@ -240,6 +240,20 @@ async def gitadora_gametop_get(ver: str, request: Request):
                     E.multiply(0, __type="s32"),
                     E.point(0, __type="s32"),
                 ),
+                E.galaxy_parade(
+                    E.score_list(),
+                    E.last_corner_id(0, __type="s32"),
+                    E.chara_list(),
+                    E.last_sort_category(0, __type="s32"),
+                    E.last_sort_order(0, __type="s32"),
+                    E.team_member(
+                        E.chara_id_guitar(0, __type="s32"),
+                        E.chara_id_bass(0, __type="s32"),
+                        E.chara_id_drum(0, __type="s32"),
+                        E.chara_id_free1(0, __type="s32"),
+                        E.chara_id_free2(0, __type="s32"),
+                    ),
+                ),
                 E.livehouse(E.score_list(E.last_livehouse(0, __type="s32"))),
                 E.jubeat_omiyage_challenge(),
                 E.light_mode_reward_item(
