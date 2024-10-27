@@ -310,7 +310,7 @@ async def iidx31pc_get(request: Request):
                         tour_id=i,
                         progress=50,  # set to 49 to see WT folders, 50 is completed/hidden
                     )
-                    for i in range(16)
+                    for i in range(17)
                 ],
             ),
             E.lightning_setting(
@@ -809,7 +809,7 @@ async def iidx31pc_common(request: Request):
             E.movie_agreement(version=1),
             E.license("None", __type="str"),
             E.file_recovery(url=str(config.ip)),
-            E.movie_upload(url=f"http://{str(config.ip)}:4399/movie/"),
+            E.movie_upload(url=f"http://{str(request.client.host)}:4399/movie/"), # use https://github.com/bookqaq/010-record-api
             # E.button_release_frame(frame=''),
             # E.trigger_logic_type(type=''),
             # E.cm_movie_info(type=''),

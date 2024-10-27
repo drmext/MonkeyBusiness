@@ -391,7 +391,7 @@ async def iidx30pc_get(request: Request):
             E.enable_qr_reward(),
             E.nostalgia_open(),
             E.language_setting(language=profile["language_setting"]),
-            E.movie_agreement(agreement_version=profile["movie_agreement"]),
+            E.movie_agreement(agreement_version=profile.get("movie_agreement", 0)),
             E.bpl_virtual(),
             E.lightning_play_data(
                 spnum=profile["lightning_play_data_spnum"],
@@ -758,7 +758,7 @@ async def iidx30pc_common(request: Request):
             E.movie_agreement(version=1),
             E.license("None", __type="str"),
             E.file_recovery(url=str(config.ip)),
-            E.movie_upload(url=str(config.ip)),
+            E.movie_upload(url=f"http://{str(request.client.host)}:4399/movie/"), # use https://github.com/bookqaq/010-record-api
             # E.button_release_frame(frame=''),
             # E.trigger_logic_type(type=''),
             # E.cm_movie_info(type=''),
@@ -906,6 +906,16 @@ async def iidx30pc_save(request: Request):
         concentration = lightning_setting.find("concentration")
         if concentration is not None:
             game_profile["lightning_setting_concentration"] = int(concentration.text)
+
+    movie_agreement = request_info["root"][0].find("movie_agreement")
+    if movie_agreement is not None and "agreement_version" in movie_agreement.attrib:
+        game_profile["movie_agreement"] = int(
+            movie_agreement.attrib["agreement_version"]
+        )
+
+    hide_name = request_info["root"][0].find("movie_setting/hide_name")
+    if hide_name is not None:
+        game_profile["hide_name"] = int(hide_name.text)
 
     lightning_customize_flg = request_info["root"][0].find("lightning_customize_flg")
     if lightning_customize_flg is not None:
@@ -1338,6 +1348,35 @@ async def iidx30pc_eaappliresult(request: Request):
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
 
+
+@router.post("/{gameinfo}/IIDX30pc/playstart")
+async def iidx30pc_playstart(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX30pc())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX30pc/playend")
+async def iidx30pc_playend(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX30pc())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/IIDX30pc/delete")
+async def iidx30pc_delete(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(E.IIDX30pc())
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
 
 @router.post("/{gameinfo}/IIDX30pc/logout")
 async def iidx30pc_logout(request: Request):

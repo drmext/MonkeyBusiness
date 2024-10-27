@@ -590,3 +590,17 @@ async def iidx32music_getranksub(request: Request):
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
+
+@router.post("/{gameinfo}/IIDX32music/movieinfo")
+async def iidx32music_movieinfo(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.IIDX32music(
+            status=0,
+        )
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+

@@ -576,3 +576,16 @@ async def iidx31music_nosave(request: Request):
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
+
+@router.post("/{gameinfo}/IIDX31music/movieinfo")
+async def iidx31music_movieinfo(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.IIDX31music(
+            status=0,
+        )
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
