@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Response
 
 from core_common import core_process_request, core_prepare_response, E
 
-router = APIRouter(prefix="/lobby", tags=["lobby"])
+router = APIRouter(prefix="/lobby2", tags=["lobby2"])
 router.model_whitelist = ["LDJ"]
 
 
