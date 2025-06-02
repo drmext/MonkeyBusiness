@@ -17,6 +17,19 @@ def get_target_table(game_id):
         "REC": "dancerush_profile",
         "JDZ": "iidx_profile",
         "KDZ": "iidx_profile",
+        "KDX": "ddr_profile",
+        "JDX": "ddr_profile",
+        "K32": "gitadora_profile",
+        "JDJ": "iidx_profile",
+        "I00": "iidx_profile",
+        "HDD": "iidx_profile",
+        "GLD": "iidx_profile",
+        "HDX": "ddr_profile",
+        "K33": "gitadora_profile",
+        "L32": "gitadora_profile",
+        "L33": "gitadora_profile",
+        "J32": "gitadora_profile",
+        "J33": "gitadora_profile",
     }
 
     return target_table[game_id]
