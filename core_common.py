@@ -117,18 +117,16 @@ async def core_get_game_version_from_software_version(software_version):
             return 2
         elif ext >= 2013012400:
             return 1
+
+gcde.gdxg.l3 = ["L32", "L33"]
+gcde.gdxg.k3 = ["K32", "K33"]
+gcde.gdxg.j3 = ["J32", "J33"]
 # GDXG
-    elif model == "L33": #GuitarFreaks XG3
-            return 6
-    elif model == "L32": #DrumMania XG3
-            return 5
-    elif model == "K33":
-            return 4
-    elif model == "K32":
+    elif model in gcde.gdxg.l3: # GFDM XG3
             return 3
-    elif model == "J33":
+    elif model in gcde.gdxg.k3: # GFDM XG2
             return 2
-    elif model == "J32":
+    elif model in gcde.gdxg.j3: # GFDM XG
             return 1
 
 # DDR
