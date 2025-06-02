@@ -133,8 +133,26 @@ async def core_get_game_version_from_software_version(software_version):
 
 # DDR
     elif model == "MDX":
-        if ext >= 2019022600:  # ???
+        if ext >= 2024061203:  # DDR WORLD 
+            return 23
+        if ext >= 2022022801:  # DDR A3
+            return 22
+        if ext >= 2019022600:  # DDR A20 PLUS
+            return 21
+        if ext >= 2019022600:  # DDR A20
+            return 20
+        if ext >= 2016032800:  # DDR A
             return 19
+        if ext >= 2014050900:  # DDR 2014
+            return 18
+        if ext >= 2013031000:  # DDR 2013
+            return 17
+        if ext >= 2011110501:  # DDR X3
+            return 16
+        if ext >= 2010060700:  # DDR X2 presume
+            return 15
+        if ext >= 2008122400:  # DDR X presume
+            return 14
 
     elif model == "KFC":
         # TODO: Fix newer than 2022 versions (never, I don't play this game)
