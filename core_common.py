@@ -50,6 +50,7 @@ async def core_get_game_version_from_software_version(software_version):
     _, model, dest, spec, rev, ext = software_version
     ext = int(ext)
 
+# beatmaniaIIDX
     if model == "LDJ":
         if ext >= 2024100900:
             return 32
@@ -82,7 +83,17 @@ async def core_get_game_version_from_software_version(software_version):
         return 19
     elif model == "JDZ":
         return 18
+# Expand IIDX REVISIONS TO IIDX14; TODO: Import Duel0213 plugin. (Expand to IIDX9 in the future)
+    elif model == "JDJ":
+        return 17
+    elif model == "I00":
+        return 16
+    elif model == "HDD":
+        return 15
+    elif model == "GLD":
+        return 14
 
+# GITADORA
     elif model == "M32":
         if ext >= 2024031300:
             return 10
@@ -95,6 +106,7 @@ async def core_get_game_version_from_software_version(software_version):
         elif ext >= 2018072700:
             return 6
         # TODO: Support versions 1-5 (never)
+# Enable matixx based on CORE plugin
         elif ext >= 2017090600:
             return 5
         elif ext >= 2017011800:
@@ -105,13 +117,28 @@ async def core_get_game_version_from_software_version(software_version):
             return 2
         elif ext >= 2013012400:
             return 1
+# GDXG
+    elif model == "L33": #GuitarFreaks XG3
+            return 6
+    elif model == "L32": #DrumMania XG3
+            return 5
+    elif model == "K33":
+            return 4
+    elif model == "K32":
+            return 3
+    elif model == "J33":
+            return 2
+    elif model == "J32":
+            return 1
 
+# DDR
     elif model == "MDX":
         if ext >= 2019022600:  # ???
             return 19
 
     elif model == "KFC":
         # TODO: Fix newer than 2022 versions (never, I don't play this game)
+# TODO: Add Booth - Volks Wagen support
         if ext >= 2020090402:  # ???
             return 6
 
