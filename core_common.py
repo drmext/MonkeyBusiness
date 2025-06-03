@@ -118,6 +118,27 @@ async def core_get_game_version_from_software_version(software_version):
         elif ext >= 2013012400: # GITADORA
             return 1
 
+# jubeat
+    elif model == "L44":
+        elif ext >= 2021042100: # btAve.
+            return 8
+        elif ext >= 2019100200: # Ave.
+            return 7
+        elif ext >= 2018072700: # festo
+            return 6
+        # TODO: 
+        elif ext >= 2017090600: # clan
+            return 5
+        elif ext >= 2017011800: # qubell
+            return 4
+        elif ext >= 2015042100: # prop
+            return 3
+        elif ext >= 2014021400: # saucer ff
+            return 2
+        elif ext >= 2013012400: # saucer
+            return 1
+
+# Set variables for gdxg and gfdm
 gcde.gdxg.l3 = ["L32", "L33"]
 gcde.gdxg.k3 = ["K32", "K33"]
 gcde.gdxg.j3 = ["J32", "J33"]
@@ -130,11 +151,11 @@ gcde.gdxg.j3 = ["J32", "J33"]
             return 1
 
 # GDVX
-    elif model in gcde.gdxg.i3: # GFDM V8
+    elif model in gcde.gfdm.l3: # GFDM V8
             return 8
-    elif model in gcde.gdxg.h3: # GFDM V7
+    elif model in gcde.gfdm.k3: # GFDM V7
             return 7
-    elif model in gcde.gdxg.g3: # GFDM V6
+    elif model in gcde.gfdm.j3: # GFDM V6
             return 6
 
 # DDR
