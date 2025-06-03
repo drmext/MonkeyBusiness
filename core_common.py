@@ -95,33 +95,33 @@ async def core_get_game_version_from_software_version(software_version):
 
 # GITADORA
     elif model == "M32":
-        if ext >= 2024031300:
+        if ext >= 2024031300: # GALAXY WAVE
             return 10
-        elif ext >= 2022121400:
+        elif ext >= 2022121400: # Fuzz-up
             return 9
-        elif ext >= 2021042100:
+        elif ext >= 2021042100: # High Voltage
             return 8
-        elif ext >= 2019100200:
+        elif ext >= 2019100200: # NEX+AGE
             return 7
-        elif ext >= 2018072700:
+        elif ext >= 2018072700: # EXCHAIN GDHDV3
             return 6
         # TODO: Support versions 1-5 (never)
-# Enable matixx based on CORE plugin
-        elif ext >= 2017090600:
+# Enable matixx based on CORE plugin GDHDV2
+        elif ext >= 2017090600: # matixx
             return 5
-        elif ext >= 2017011800:
+        elif ext >= 2017011800: # RE-EVOLVE
             return 4
-        elif ext >= 2015042100:
+        elif ext >= 2015042100: # TRI-BOOST
             return 3
-        elif ext >= 2014021400:
+        elif ext >= 2014021400: # OverDrive
             return 2
-        elif ext >= 2013012400:
+        elif ext >= 2013012400: # GITADORA
             return 1
 
 gcde.gdxg.l3 = ["L32", "L33"]
 gcde.gdxg.k3 = ["K32", "K33"]
 gcde.gdxg.j3 = ["J32", "J33"]
-# GDXG
+# GDXG (GDHDV1.5/GDHDV2)
     elif model in gcde.gdxg.l3: # GFDM XG3
             return 3
     elif model in gcde.gdxg.k3: # GFDM XG2
@@ -129,11 +129,19 @@ gcde.gdxg.j3 = ["J32", "J33"]
     elif model in gcde.gdxg.j3: # GFDM XG
             return 1
 
+# GDVX
+    elif model in gcde.gdxg.i3: # GFDM V8
+            return 8
+    elif model in gcde.gdxg.h3: # GFDM V7
+            return 7
+    elif model in gcde.gdxg.g3: # GFDM V6
+            return 6
+
 # DDR
     elif model == "MDX":
-        if ext >= 2024061203:  # DDR WORLD 
+        if ext >= 2024061200:  # DDR WORLD 
             return 23
-        if ext >= 2022022801:  # DDR A3
+        if ext >= 2022022800:  # DDR A3
             return 22
         if ext >= 2019022600:  # DDR A20 PLUS
             return 21
@@ -155,14 +163,30 @@ gcde.gdxg.j3 = ["J32", "J33"]
     elif model == "KFC":
         # TODO: Fix newer than 2022 versions (never, I don't play this game)
 # TODO: Add Booth - Volks Wagen support
-        if ext >= 2020090402:  # ???
+        if ext >= 2023042500:  # SDVX EG SC
+            return 9
+        if ext >= 2022042500:  # SDVX EG S2
+            return 8
+        if ext >= 2021021700:  # SDVX EG S1
+            return 7
+        if ext >= 2019022801:  # SDVX VW
             return 6
+        if ext >= 2016122100:  # SDVX HH
+            return 5
+        if ext >= 2015120400:  # SDVX GW S2
+            return 4
+        if ext >= 2014112000:  # SDVX GW S1
+            return 3
+        if ext >= 2013060500:  # SDVX II
+            return 2
+        if ext >= 2012011800:  # SDVX BOOTH
+            return 1
 
     elif model == "REC":
         return 1
 
     # TODO: ???
-    # elif model == "PAN":
+    # elif model == "PAN": # Enable op3, op2, forte, and op1 support
     #     return 0
 
     else:
