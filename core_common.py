@@ -121,22 +121,30 @@ async def core_get_game_version_from_software_version(software_version):
 # jubeat
     elif model == "L44":
         elif ext >= 2021042100: # btAve.
-            return 8
+            return 12
         elif ext >= 2019100200: # Ave.
-            return 7
+            return 11
         elif ext >= 2018072700: # festo
-            return 6
+            return 10
         # TODO: 
         elif ext >= 2017090600: # clan
-            return 5
+            return 9
         elif ext >= 2017011800: # qubell
-            return 4
+            return 8
         elif ext >= 2015042100: # prop
-            return 3
+            return 7
         elif ext >= 2014021400: # saucer ff
-            return 2
+            return 6
         elif ext >= 2013012400: # saucer
-            return 1
+            return 5
+    elif model == "K44": # copious and append
+        return 4
+    elif model == "J44": # knit and append
+        return 3
+    elif model == "I44": # ripples and append
+        return 2
+    elif model == "H44": # jubeat and append
+        return 1
 
 # Set variables for gdxg and gfdm
 gcde.gdxg.l3 = ["L32", "L33"]
