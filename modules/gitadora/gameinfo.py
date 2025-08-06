@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Response
 from core_common import core_process_request, core_prepare_response, E
 
 router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
+router.model_whitelist = ["M32", "L33", "L32", "K33", "K32", "J33", "J32"]
 
 
 @router.post("/{gameinfo}/{ver}_gameinfo/get")
