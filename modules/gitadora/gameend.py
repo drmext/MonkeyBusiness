@@ -6,7 +6,7 @@ from core_common import core_process_request, core_prepare_response, E
 from core_database import get_db
 
 router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
+router.model_whitelist = ["M32", "L33", "L32", "K33", "K32", "J33", "J32"]
 
 
 def get_profile(cid):
@@ -29,6 +29,10 @@ async def gitadora_gameend_regist(ver: str, request: Request):
         g = "guitarfreaks"
     elif spec == "B":
         g = "drummania"
+    elif spec == "C":
+        g = "guitarfreaksdelta"
+    elif spec == "D":
+        g = "drummaniadelta"
 
     root = request_info["root"][0]
 
