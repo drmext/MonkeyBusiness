@@ -146,25 +146,32 @@ async def core_get_game_version_from_software_version(software_version):
     elif model == "H44": # jubeat and append
         return 1
 
+#################################################################################################################
+#                                                                                                               #
+#    MASSIVE TO-DO STUFF: GDXG and GDVX support; Cleanup code and hopefully finish this behemoth of a demon.    #
+#                                                                                                               #
+#################################################################################################################
+
+
 # Set variables for gdxg and gfdm
 gcde.gdxg.l3 = ["L32", "L33"]
 gcde.gdxg.k3 = ["K32", "K33"]
 gcde.gdxg.j3 = ["J32", "J33"]
-# GDXG (GDHDV1.5/GDHDV2)
+# GDXG (GDHDV1/GDHD-XG3)
     elif model in gcde.gdxg.l3: # GFDM XG3
-            return 3
+            return 93
     elif model in gcde.gdxg.k3: # GFDM XG2
-            return 2
+            return 92
     elif model in gcde.gdxg.j3: # GFDM XG
-            return 1
+            return 91
 
 # GDVX
-    elif model in gcde.gfdm.l3: # GFDM V8
-            return 8
-    elif model in gcde.gfdm.k3: # GFDM V7
-            return 7
-    elif model in gcde.gfdm.j3: # GFDM V6
-            return 6
+    elif model in gcde.gfdm.k3: # GFDM V8
+            return 88
+    elif model in gcde.gfdm.j3: # GFDM V7
+            return 87
+    elif model in gcde.gfdm.i3: # GFDM V6
+            return 86
 
 # DDR
     elif model == "MDX":
