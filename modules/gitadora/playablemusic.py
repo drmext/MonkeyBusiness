@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Response
 from core_common import core_process_request, core_prepare_response, E
 
 router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
+router.model_whitelist = ["M32", "L32", "L33", "K32", "K33", "J32", "J33"]
 
 
 @router.post("/{gameinfo}/{ver}_playablemusic/get")
