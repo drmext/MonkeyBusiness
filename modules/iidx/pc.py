@@ -9,7 +9,7 @@ from core_common import core_process_request, core_prepare_response, E
 from core_database import get_db
 
 router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
+router.model_whitelist = ["LDJ", "KDZ", "JDZ", "JDJ", "I00", "HDD", "GLD", "FDD", "ECO", "E11", "D01", "C02"]
 
 
 def get_profile(cid):
