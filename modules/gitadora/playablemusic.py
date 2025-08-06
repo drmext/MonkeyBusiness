@@ -52,9 +52,15 @@ async def gitadora_playablemusic_get(ver: str, request: Request):
         short_ver = "ex"
     elif ver == "matixx":
         short_ver = "mt"
+    elif ver == "reevolve":
+        short_ver = "re"
+    elif ver == "triboost":
+        short_ver = "tb"
+    elif ver == "overdrive":
+        short_ver = "od"
 
     if not short_ver:
-        short_ver = "MISSING_FALLBACK"
+        short_ver = "xg"
 
     for f in (
         path.join("modules", "gitadora", f"mdb_{short_ver}.xml"),
@@ -69,7 +75,7 @@ async def gitadora_playablemusic_get(ver: str, request: Request):
                 for entry in root:
                     if entry.tag == "mdb_data":
                         lvl = entry.find("xg_diff_list").text.split(" ")
-                        if short_ver in ("fz", "hv", "nt", "ex"):
+                        if short_ver in ("gw", "fz", "hv", "nt", "ex", "mt", "re", "tb", "od"):
                             d_ver = int(entry.find("data_ver").text)
                         else:
                             d_ver = 115
