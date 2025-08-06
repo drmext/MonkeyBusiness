@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Response
 from core_common import E, core_prepare_response, core_process_request
 
 router = APIRouter(prefix="/lobby", tags=["lobby"])
-router.model_whitelist = ["M32"]
+router.model_whitelist = ["M32", "L33", "L32", "K33", "K32", "J33", "J32"]
 
 
 host = {}
