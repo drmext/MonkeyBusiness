@@ -10,7 +10,7 @@ from core_database import get_db
 import config
 
 router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
+router.model_whitelist = ["LDJ", "KDZ", "JDZ", "JDJ", "I00", "HDD", "GLD", "FDD", "ECO", "E11", "D01", "C02"]
 
 
 class ClearFlags(IntEnum):
