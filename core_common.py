@@ -92,6 +92,16 @@ async def core_get_game_version_from_software_version(software_version):
         return 15
     elif model == "GLD":
         return 14
+    elif model == "FDD":
+        return 13
+    elif model == "ECO":
+        return 12
+    elif model == "E11":
+        return 11
+    elif model == "D01":
+        return 10
+    elif model == "C02":
+        return 9
 
 # GITADORA
     elif model == "M32":
