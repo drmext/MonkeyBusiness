@@ -420,9 +420,9 @@ async def iidx33pc_get(request: Request):
                     profile["keybeam"],
                     profile.get("keybeam_size", 1),
                     profile["fullcombo"],
-                    0,
-                    0,
-                    0,
+                    profile.get("pskin_id_19", 0),
+                    profile.get("pskin_id_20", 0),
+                    profile.get("pskin_id_21", 0),
                 ],
                 __type="s32" if date_code >= 2024011600 else "s16",
             ),
@@ -430,8 +430,8 @@ async def iidx33pc_get(request: Request):
                 [
                     profile.get("submonitor", 0),
                     profile.get("subbg", 0),
-                    0,
-                    0,
+                    profile.get("vskin_id_2", 0),
+                    profile.get("vskin_id_3", 0),
                 ],
                 __type="s32",
             ),
@@ -1029,7 +1029,7 @@ async def iidx33pc_save(request: Request):
             int(x) for x in point.text.split(" ")
         ]
 
-    skin_equips = request_info["root"][0].findall("skin_equip")
+    skin_equips = request_info["root"][0].findall("pskin_equip")
     skin_equips = [] if skin_equips is None else skin_equips
     skin = {
         1: "explosion",
@@ -1044,17 +1044,22 @@ async def iidx33pc_save(request: Request):
         16: "keybeam",
         17: "keybeam_size",
         18: "fullcombo",
+        19: "pskin_id_19",
+        20: "pskin_id_20",
+        21: "pskin_id_21",
     }
     for skin_equip in skin_equips:
         skin_id = int(skin_equip.attrib["skin_id"])
         if skin_id in skin:
             game_profile[skin[skin_id]] = int(skin_equip.attrib["skin_no"])
 
-    tdjskin_equips = request_info["root"][0].findall("tdjskin_equip")
+    tdjskin_equips = request_info["root"][0].findall("vskin_equip")
     tdjskin_equips = [] if tdjskin_equips is None else tdjskin_equips
     tdjskin = {
         0: "submonitor",
         1: "subbg",
+        2: "vskin_id_2",
+        3: "vskin_id_3",
     }
     for tdjskin_equip in tdjskin_equips:
         skin_id = int(tdjskin_equip.attrib["skin_id"])
@@ -1199,6 +1204,11 @@ async def iidx33pc_reg(request: Request):
         "explosion_size": 0,
         "note_size": 0,
         "keybeam_size": 0,
+        "pskin_id_19": 0,
+        "pskin_id_20": 0,
+        "pskin_id_21": 0,
+        "vskin_id_2": 0,
+        "vskin_id_3": 0,
         "submonitor": 0,
         "subbg": 0,
         "alternate_hcn": 0,
