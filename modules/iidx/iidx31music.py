@@ -210,7 +210,7 @@ async def iidx31music_reg(request: Request):
     graph_type = int(log.attrib["graph_type"])
     great_num = int(log.attrib["great_num"])
     iidx_id = int(log.attrib["iidx_id"])
-    miss_num = int(log.attrib["miss_num"])
+    miss_num = int(log.attrib["miss_num"]) if is_death == 0 else -1
     mode_type = int(log.attrib["mode_type"])
     music_id = int(log.attrib["music_id"])
     note_id = int(log.attrib["note_id"])
@@ -256,15 +256,11 @@ async def iidx31music_reg(request: Request):
     )
     best_score = {} if best_score is None else best_score
 
-    if clear_flg < ClearFlags.EASY_CLEAR:
-        miss_num = -1
     best_miss_count = best_score.get("miss_count", miss_num)
-    if best_miss_count == -1:
-        miss_count = max(miss_num, best_miss_count)
-    elif clear_flg > ClearFlags.ASSIST_CLEAR:
-        miss_count = min(miss_num, best_miss_count)
+    if best_miss_count == -1 or miss_num ==-1:
+        miss_count = max(miss_num, best_miss_count) 
     else:
-        miss_count = best_miss_count
+        miss_count = min(miss_num, best_miss_count)
     best_ex_score = best_score.get("ex_score", ex_score)
     best_score_data = {
         "game_version": game_version,
