@@ -379,6 +379,8 @@ handlers = {
     30,  # RESIDENT
     31,  # EPOLIS
     32,  # PINKY CRUSH
+    33,  # SPARKLE SHOWER
+    34,  # ???
     80,  # INFINITAS
 }
 
