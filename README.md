@@ -1,17 +1,29 @@
 # MonkeyBusiness
 
-experimental local testing server
+Experimental e-amuse server intended for testing hacks, also usable by players
 
 ## Usage
 
-Run [start.bat (Windows)](start.bat) or [start.sh (Linux)](start.sh)
+Run [start.bat (Windows)](start.bat) or [start.sh (Linux, MacOS)](start.sh)
 
 [web interface](https://github.com/drmext/BounceTrippy/releases), [score import](utils/db)
+
+## Playable Games
+- IIDX 18-20, 28-32 (Online Arena/BPL support)
+- DDR A20P, A3 (OmniMIX support w/ DAN & pfree score saving hack)
+- GD 6-10 (Battle Mode support)
+- DRS
+- NOST 3
+- SDVX 6 2020-2023
+
+**Note**: Playable means settings/scores *should* save and load. Events are not implemented.
 
 ## Troubleshooting
 
 - Delete [or fix](start.bat#L9) `/.venv` if the server folder is moved or python is upgraded
 
-- DRS, GD, and NOST require mdb xml copied to the server folder
+- DRS, GD, and NOST require mdb xml files copied to the server folder
 
 - **URL Slash 1 (On)** [may still be required in rare cases](modules/__init__.py#L46)
+
+- When initially creating a DDR profile, complete an entire credit without pfree hacks
