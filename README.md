@@ -9,9 +9,9 @@ Run [start.bat (Windows)](start.bat) or [start.sh (Linux, MacOS)](start.sh)
 [web interface](https://github.com/drmext/BounceTrippy/releases), [score import](utils/db)
 
 ## Playable Games
-- IIDX 18-20, 28-32 (Online Arena/BPL support)
+- IIDX 18-20, 29-33 (Online Arena/BPL support)
 - DDR A20P, A3 (OmniMIX support w/ DAN & pfree score saving hack)
-- GD 6-10 (Battle Mode support)
+- GD 6-10 DELTA (Battle Mode support)
 - DRS
 - NOST 3
 - SDVX 6 2020-2023

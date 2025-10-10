@@ -25,9 +25,9 @@ async def gitadora_gameend_regist(ver: str, request: Request):
     game_version = request_info["game_version"]
     spec = request_info["spec"]
 
-    if spec == "A":
+    if spec in ("A", "C"):
         g = "guitarfreaks"
-    elif spec == "B":
+    elif spec in ("B", "D"):
         g = "drummania"
 
     root = request_info["root"][0]

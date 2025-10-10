@@ -12,6 +12,12 @@ router.model_whitelist = ["M32"]
 @router.post("/{gameinfo}/{ver}_playablemusic/get")
 async def gitadora_playablemusic_get(ver: str, request: Request):
     request_info = await core_process_request(request)
+    spec = request_info["spec"]
+
+    if spec in ("A", "B"):
+        is_delta = False
+    elif spec in ("C", "D"):
+        is_delta = True
 
     # the game freezes if response has no songs
     # so make sure there is at least one
@@ -56,10 +62,18 @@ async def gitadora_playablemusic_get(ver: str, request: Request):
     if not short_ver:
         short_ver = "MISSING_FALLBACK"
 
-    for f in (
-        path.join("modules", "gitadora", f"mdb_{short_ver}.xml"),
-        path.join(f"mdb_{short_ver}.xml"),
-    ):
+    if is_delta == True:
+        paths = (
+            path.join("modules", "gitadora", f"mdb_{short_ver}_delta.xml"),
+            path.join(f"mdb_{short_ver}_delta.xml"),
+        )
+    else:
+        paths = (
+            path.join("modules", "gitadora", f"mdb_{short_ver}.xml"),
+            path.join(f"mdb_{short_ver}.xml"),
+        )
+
+    for f in paths:
         if path.exists(f):
             with open(f, "r", encoding="utf-8") as fp:
 
