@@ -70,7 +70,7 @@ async def game_sv6_common(request: Request):
         "CREW_SELECT_ABLE",
         "PREMIUM_TIME_ENABLE",
         "OMEGA_ENABLE\t1,2,3,4,5,6,7,8,9",
-        "HEXA_ENABLE\t1,2,3,4,5,6,7,8,9",
+        "HEXA_ENABLE\t1,2,3,4,5,6,7,8,9,10,11",
         "HEXA_OVERDRIVE_ENABLE\t8",
         "MEGAMIX_ENABLE",
         "VALGENE_ENABLE",
@@ -87,7 +87,9 @@ async def game_sv6_common(request: Request):
         "PLAYER_RADAR_ENABLE",
         "APRIL_RAINBOW_LINE_ACTIVE",
         "USE_CUDA_VIDEO_PRESENTER",
-        "CHARACTER_IGNORE_DISABLE\t122,123,131,139,140,143,149,160",
+        "CHARACTER_IGNORE_DISABLE\t122,123,131,139,140,143,149,160,162,163,164,167,170,174",
+        "STAMP_IGNORE_DISABLE\t273~312,773~820,993~1032,1245~1284,1469~1508,1585~1632,1633~1672,1737~1776,1777~1816,1897~1936",
+        "SUBBG_IGNORE_DISABLE\t166~185,281~346,369~381,419~438,464~482,515~552,595~616,660~673,714~727",
     ]
 
     unlock = []
@@ -439,10 +441,11 @@ async def game_sv6_save(request: Request):
         "skill_level",
         "skill_base_id",
         "skill_name_id",
+        "skill_type",
         "earned_gamecoin_packet",
         "earned_gamecoin_block",
         "earned_blaster_energy",
-        "earned_extrack_energy",
+        "earned_extrack_energy",  #
         "hispeed",
         "lanespeed",
         "gauge_option",
@@ -461,7 +464,9 @@ async def game_sv6_save(request: Request):
     ]
 
     for node in nodes:
-        game_profile[node] = int(root.find(node).text)
+        n = root.find(node)
+        if n is not None:
+            game_profile[node] = int(n.text)
 
     game_profile["used_packet_booster"] = int(root.find("ea_shop")[0].text)
     game_profile["used_block_booster"] = int(root.find("ea_shop")[1].text)
@@ -681,25 +686,109 @@ async def game_sv6_shop(request: Request):
     return Response(content=response_body, headers=response_headers)
 
 
-for stub in [
-    "load_r",
-    "frozen",
-    "save_e",
-    "save_mega",
-    "play_e",
-    "play_s",
-    "entry_s",
-    "entry_e",
-    "log",
-]:
+@router.post("/{gameinfo}/game/sv6_load_r")
+async def game_sv6_load_r(request: Request):
+    request_info = await core_process_request(request)
 
-    @router.post(f"/{{gameinfo}}/game/sv6_{stub}")
-    async def game_sv6_stub(request: Request):
-        request_info = await core_process_request(request)
+    response = E.response(
+        E.game(),
+    )
 
-        response = E.response(
-            E.game(),
-        )
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
 
-        response_body, response_headers = await core_prepare_response(request, response)
-        return Response(content=response_body, headers=response_headers)
+
+@router.post("/{gameinfo}/game/sv6_frozen")
+async def game_sv6_frozen(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_save_e")
+async def game_sv6_save_e(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_save_mega")
+async def game_sv6_save_mega(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_play_e")
+async def game_sv6_play_e(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_play_s")
+async def game_sv6_play_s(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_entry_s")
+async def game_sv6_entry_s(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_entry_e")
+async def game_sv6_entry_e(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
+
+
+@router.post("/{gameinfo}/game/sv6_log")
+async def game_sv6_log(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.game(),
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)

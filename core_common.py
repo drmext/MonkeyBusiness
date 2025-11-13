@@ -113,7 +113,6 @@ async def core_get_game_version_from_software_version(software_version):
             return 19
 
     elif model == "KFC":
-        # TODO: Fix newer than 2022 versions (never, I don't play this game)
         if ext >= 2020090402:  # ???
             return 6
 

@@ -14,7 +14,7 @@ Run [start.bat (Windows)](start.bat) or [start.sh (Linux, MacOS)](start.sh)
 - GD 6-10 DELTA (Battle Mode support)
 - DRS
 - NOST 3
-- SDVX 6 2020-2023
+- SDVX 6
 
 **Note**: Playable means settings/scores *should* save and load. Events are not implemented.
 
