@@ -1,3 +1,6 @@
+import xml.etree.ElementTree as ET
+from os import path
+
 from tinydb import Query, where
 
 import config
@@ -93,9 +96,42 @@ async def game_sv6_common(request: Request):
     ]
 
     unlock = []
-    for i in range(2800):
-        for j in range(0, 5):
-            unlock.append([i, j])
+
+    for f in (
+        path.join("modules", "sdvx", "music_db.xml"),
+        path.join("music_db.xml"),
+    ):
+        if path.exists(f):
+            with open(f, "r", encoding="shift_jisx0213") as fp:
+
+                tree = ET.parse(fp, ET.XMLParser())
+                mdb = tree.getroot()
+
+                for entry in mdb:
+                    mid = entry.get("id")
+                    # print(mid)
+                    difficulties = {
+                        0: "novice",
+                        1: "advanced",
+                        2: "exhaust",
+                        3: "infinite",
+                        4: "maximum",
+                        5: "ultimate",
+                    }
+                    for k in difficulties:
+                        d = entry.find("difficulty").find(difficulties[k])
+                        if d is not None:
+                            limit = int(d.find("limited").text)
+                            if limit != 3:
+                                # print(mid, difficulties[k], limit)
+                                unlock.append([mid, k])
+                break
+
+    if unlock == []:
+        for i in range(2310):
+            for j in range(0, 5):
+                unlock.append([i, j])
+
 
     response = E.response(
         E.game(
@@ -466,34 +502,80 @@ async def game_sv6_save(request: Request):
     for node in nodes:
         n = root.find(node)
         if n is not None:
-            game_profile[node] = int(n.text)
+            if node.startswith("earned_"):
+                game_profile[node] += int(n.text)
+            else:
+                game_profile[node] = int(n.text)
 
     game_profile["used_packet_booster"] = int(root.find("ea_shop")[0].text)
     game_profile["used_block_booster"] = int(root.find("ea_shop")[1].text)
     game_profile["print_count"] = int(root.find("print")[0].text)
 
-    items = []
-    for info in root.find("item"):
-        items.append(
-            [
-                int(info.find("id").text),
-                int(info.find("type").text),
-                int(info.find("param").text),
-            ]
-        )
-    game_profile["items"] = items
+    # item fix (copied from drs, this is regarded)
+    old_items = game_profile["items"]
+    items = {}
 
-    params = []
+    for old in old_items:
+        t = str(old[0])
+        i = str(old[1])
+        p = str(old[2])
+        if t not in items:
+            items[t] = {}
+            if i not in items[t]:
+                items[t][i] = {}
+        items[t][i] = p
+
+    for info in root.find("item"):
+        t = info.find("id").text
+        i = info.find("type").text
+        p = info.find("param").text
+
+        if t not in items:
+            items[t] = {}
+            if i not in items[t]:
+                items[t][i] = {}
+        items[t][i] = p
+
+    items_list = []
+
+    for t in items:
+        for i in items[t]:
+            items_list.append([int(t), int(i), int(items[t][i])])
+
+    game_profile["items"] = items_list
+
+    # param fix (copied from drs, this is regarded)
+    old_params = game_profile["params"]
+    params = {}
+
+    for old in old_params:
+        t = str(old[0])
+        i = str(old[1])
+        p = old[2]
+        if t not in params:
+            params[t] = {}
+            if i not in params[t]:
+                params[t][i] = {}
+        params[t][i] = p
+
     for info in root.find("param"):
+        t = info.find("type").text
+        i = info.find("id").text
         p = info.find("param")
-        params.append(
-            [
-                int(info.find("type").text),
-                int(info.find("id").text),
-                [int(x) for x in p.text.split(" ")],
-            ]
-        )
-    game_profile["params"] = params
+
+        if t not in params:
+            params[t] = {}
+            if i not in params[t]:
+                params[t][i] = {}
+        params[t][i] = [int(x) for x in p.text.split(" ")]
+
+    params_list = []
+
+    for t in params:
+        for i in params[t]:
+            params_list.append([int(t), int(i), params[t][i]])
+
+    game_profile["params"] = params_list
 
     profile["version"][str(game_version)] = game_profile
 

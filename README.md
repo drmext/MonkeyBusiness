@@ -22,7 +22,7 @@ Run [start.bat (Windows)](start.bat) or [start.sh (Linux, MacOS)](start.sh)
 
 - Delete [or fix](start.bat#L9) `/.venv` if the server folder is moved or python is upgraded
 
-- DRS, GD, and NOST require mdb xml files copied to the server folder
+- DRS, GD, NOST, and SDVX require mdb xml files copied to the server folder
 
 - **URL Slash 1 (On)** [may still be required in rare cases](modules/__init__.py#L46)
 
