@@ -99,7 +99,7 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 if mcode not in all_scores:
-                    all_scores[mcode] = [[0, 0, 0, 0, 0] for x in range(10)]
+                    all_scores[mcode] = [[0, 0, 0, 0, 0] for x in range(9)] # not 10, there is no dp beginner
                 all_scores[mcode][difficulty] = [
                     1,
                     record["rank"],
@@ -111,6 +111,24 @@ async def playerdata_2_usergamedata_advanced(request: Request):
         # league_name = b64encode(str.encode("Monkey Business")).decode()
         # current_time = round(time.time() * 1000)
 
+        f = {}
+        for mcode in all_scores.keys():
+            if mcode not in f:
+                f[mcode] = []
+            for s in [score for score in all_scores.get(mcode)]:
+                if s[0] == 0:
+                    f[mcode].append(E.note())
+                else:
+                    f[mcode].append(
+                        E.note(
+                            E.count(s[0], __type="u16"),
+                            E.rank(s[1], __type="u8"),
+                            E.clearkind(s[2], __type="u8"),
+                            E.score(s[3], __type="s32"),
+                            E.ghostid(s[4], __type="s32"),
+                        )
+                    )
+
         response = E.response(
             E.playerdata_2(
                 E.result(0, __type="s32"),
@@ -121,21 +139,30 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 # E.bpl_season_id(1, __type="s8"),
                 # E.bpl_team_id(7, __type="s8"),
                 # E.bpl_user_type(1, __type="s8"),
+                ###*[
+                ###    E.music(
+                ###        E.mcode(int(mcode), __type="u32"),
+                ###        *[
+                ###            E.note(
+                ###                E.count(s[0], __type="u16"),
+                ###                E.rank(s[1], __type="u8"),
+                ###                E.clearkind(s[2], __type="u8"),
+                ###                E.score(s[3], __type="s32"),
+                ###                E.ghostid(s[4], __type="s32"),
+                ###            )
+                ###            for s in [score for score in all_scores.get(mcode)]
+                ###        ],
+                ###    )
+                ###    for mcode in all_scores.keys()
+                ###],
                 *[
                     E.music(
                         E.mcode(int(mcode), __type="u32"),
                         *[
-                            E.note(
-                                E.count(s[0], __type="u16"),
-                                E.rank(s[1], __type="u8"),
-                                E.clearkind(s[2], __type="u8"),
-                                E.score(s[3], __type="s32"),
-                                E.ghostid(s[4], __type="s32"),
-                            )
-                            for s in [score for score in all_scores.get(mcode)]
+                            s for s in f.get(mcode)
                         ],
                     )
-                    for mcode in all_scores.keys()
+                    for mcode in f.keys()
                 ],
                 *[
                     E.eventdata(
@@ -218,6 +245,7 @@ async def playerdata_2_usergamedata_advanced(request: Request):
                 ),
             )
         )
+        f.clear()
 
     elif mode == "ghostload":
         ghostid = int(data.find("ghostid").text)
