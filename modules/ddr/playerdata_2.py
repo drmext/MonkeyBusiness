@@ -247,6 +247,17 @@ async def playerdata_2_usergamedata_advanced(request: Request):
         )
         f.clear()
 
+    elif mode == "userload" and refid == default:
+        response = E.response(
+            E.playerdata_2(
+                E.result(0, __type="s32"),
+                E.is_new(1, __type="bool"),
+                E.is_refid_locked(0, __type="bool"),
+                E.eventdata_count_all(0, __type="s16"),
+                E.opt_timing_disp(-1, __type="s32"),
+            )
+        )
+
     elif mode == "ghostload":
         ghostid = int(data.find("ghostid").text)
         record = db.table("ddr_scores").get(doc_id=ghostid)
