@@ -44,7 +44,7 @@ async def forward_slashless(
         try:
             game_code = model.split(":")[0]
             # TODO: check for more edge cases
-            if game_code == "MDX" and module == "eventlog" or module == "eventlog_2":
+            if game_code == "MDX" and module.startswith("eventlo"):
                 find_response = globals()[f"ddr_{module}_{method}"]
             elif game_code == "REC":
                 find_response = globals()[f"drs_{module}_{method}"]
