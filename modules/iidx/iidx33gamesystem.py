@@ -191,7 +191,8 @@ async def iidx33gamesystem_systeminfo(request: Request):
             E.WorldTourismOpenList(val=-1),
             E.OldBPLBattleOpenPhase(val=1),
             E.BPLBattleOpenPhase(val=3),
-            E.beat(val=0),
+            E.VocaloidEvent(val=1),
+            # E.beat(val=5293),
         )
     )
 
