@@ -10,6 +10,9 @@ from fastapi import APIRouter, Request, Response
 from core_common import core_process_request, core_prepare_response, E
 from core_database import get_db
 
+from os import path
+import json
+
 router = APIRouter(prefix="/local2", tags=["local2"])
 router.model_whitelist = ["MDX"]
 
@@ -23,6 +26,19 @@ def get_game_profile(cid, game_version):
 
     return profile["version"].get(str(game_version), None)
 
+
+mdb = {}
+ddr_metadata = path.join("webui", "ddr.json")
+if path.exists(ddr_metadata):
+    with open(ddr_metadata, "r", encoding="utf-8") as fp:
+        mdb = json.load(fp)
+
+    music_load = []
+    for i in sorted(list(mdb.keys()), reverse=True):
+        info = mdb[i]
+        for idx, lvl in enumerate(info["diffLv"]):
+            if int(lvl) != 0:
+                music_load.append(f"{i},{1 if idx > 4 else 0},{idx % 5},0,{lvl}")
 
 load_settings = {
     "common": {
@@ -118,47 +134,63 @@ load_settings = {
 }
 
 customize_settings = {
-        "1": {
-            "0": -1, #appeal_board
-        },
-        "2": {
-            "1": -1, #character_left
-            "2": -1, #character_right
-        },
-        "3": {
-            "1": -1, #game_bg_system
-            "2": -1, #game_bg_play
-        },
-        "4": {
-            "0": -1, #lane_bg_single
-        },
-        "5": {
-            "0": -1, #lane_bg_double
-        },
-        "6": {
-            "0": -1, #lane_cover_single
-        },
-        "7": {
-            "0": -1, #lane_cover_double
-        },
-        "8": {
-            "0": -1, #song_vid
-        },
-    }
+    "1": {
+        "0": -1, #appeal_board
+    },
+    "2": {
+        "1": -1, #character_left
+        "2": -1, #character_right
+    },
+    "3": {
+        "1": -1, #game_bg_system
+        "2": -1, #game_bg_play
+    },
+    "4": {
+        "0": -1, #lane_bg_single
+    },
+    "5": {
+        "0": -1, #lane_bg_double
+    },
+    "6": {
+        "0": -1, #lane_cover_single
+    },
+    "7": {
+        "0": -1, #lane_cover_double
+    },
+    "8": {
+        "0": -1, #song_vid
+    },
+}
 
 @router.post("/{gameinfo}/playdata_3/musicdata_load")
 async def playdata_3_musicdata_load(request: Request):
     request_info = await core_process_request(request)
 
-    response = E.response(
-        E.playdata_3(
-            E.result(0, __type="s32"),
-            E.servertime(round(time.time() * 1000), __type="u64"),
-            E.music(
-                E.music_str("", __type="str"),
-            ),
+    if mdb:
+        response = E.response(
+            E.playdata_3(
+                E.result(0, __type="s32"),
+                E.servertime(round(time.time() * 1000), __type="u64"),
+                *[
+                    E.music(
+                        E.music_str(s, __type="str"),
+                    )
+                    for s in music_load
+                ],
+            )
         )
-    )
+
+
+    else:
+        response = E.response(
+            E.playdata_3(
+                E.result(0, __type="s32"),
+                E.servertime(round(time.time() * 1000), __type="u64"),
+                E.music(
+                    E.music_str("", __type="str"),
+                ),
+            )
+        )
 
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
