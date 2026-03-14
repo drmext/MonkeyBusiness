@@ -501,6 +501,7 @@ async def playdata_3_playerdata_save(request: Request):
     request_info = await core_process_request(request)
     game_version = request_info["game_version"]
 
+    retrycnt = int(request_info["root"][0].find("retrycnt").text)
     data = request_info["root"][0].find("data")
 
     refid = data.find("refid").text
@@ -527,7 +528,7 @@ async def playdata_3_playerdata_save(request: Request):
             profile["version"][str(game_version)] = game_profile
             get_db().table("ddr_profile").upsert(profile, where("card") == refid)
 
-        elif savekind == 2:
+        elif savekind == 2 and retrycnt == 0:
             timestamp = time.time()
 
             ddr_id = int(data.find("common").find("ddrcode").text)
