@@ -217,12 +217,13 @@ async def playdata_3_playerdata_load(request: Request):
             for record in get_db().table("ddr_scores_best").search(where("ddr_id") == ddr_id):
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
+                flare = record.get("flare_force", 0)
                 if mcode not in all_scores:
                     all_scores[mcode] = {}
                 if difficulty > 4:
-                    all_scores[mcode][difficulty] = f"{int(difficulty) - 4},1,{record["rank"]},{record["lamp"]},{record["score"]},{record["ghostid"]},0,0,0"
+                    all_scores[mcode][difficulty] = f"{int(difficulty) - 4},1,{record["rank"]},{record["lamp"]},{record["score"]},{record["ghostid"]},{flare},{flare},0"
                 else:
-                    all_scores[mcode][difficulty] = f"{difficulty},1,{record["rank"]},{record["lamp"]},{record["score"]},{record["ghostid"]},0,0,0"
+                    all_scores[mcode][difficulty] = f"{difficulty},1,{record["rank"]},{record["lamp"]},{record["score"]},{record["ghostid"]},{flare},{flare},0"
     else:
         p = {}
         profile = {}
@@ -560,6 +561,7 @@ async def playdata_3_playerdata_save(request: Request):
             calorie = int(n.find("calorie").text)
             ghostsize = int(n.find("ghostsize").text)
             ghost = n.find("ghost").text
+            flare_force = int(n.find("flare_force").text)
 
             db.table("ddr_scores").insert(
                 {
@@ -590,6 +592,7 @@ async def playdata_3_playerdata_save(request: Request):
                     "calorie": calorie,
                     "ghostsize": ghostsize,
                     "ghost": ghost,
+                    "flare_force": flare_force,
                 },
             )
 
@@ -610,6 +613,7 @@ async def playdata_3_playerdata_save(request: Request):
                 "lamp": max(lamp, best.get("lamp", lamp)),
                 "score": max(score, best.get("score", score)),
                 "exscore": max(exscore, best.get("exscore", exscore)),
+                "flare_force": max(flare_force, best.get("flare_force", flare_force)),
             }
 
             ghostid = db.table("ddr_scores").get(
