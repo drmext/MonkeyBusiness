@@ -162,6 +162,19 @@ customize_settings = {
     },
 }
 
+flares = [
+    (995000, 10),
+    (990000, 9),
+    (980000, 8),
+    (970000, 7),
+    (960000, 6),
+    (955000, 5),
+    (930000, 4),
+    (900000, 3),
+    (850000, 2),
+    (800000, 1),
+]
+
 @router.post("/{gameinfo}/playdata_3/musicdata_load")
 async def playdata_3_musicdata_load(request: Request):
     request_info = await core_process_request(request)
@@ -216,14 +229,22 @@ async def playdata_3_playerdata_load(request: Request):
 
             for record in get_db().table("ddr_scores_best").search(where("ddr_id") == ddr_id):
                 mcode = record["mcode"]
-                difficulty = record["difficulty"]
-                flare = record.get("flare_force", 0)
+                difficulty = int(record["difficulty"])
+                score = int(record["score"])
+                flare = int(record.get("flare_force", 0))
+                if flare == 0:
+                    for k, v in flares:
+                        if score >= k:
+                            flare = v
+                            break
+
                 if mcode not in all_scores:
                     all_scores[mcode] = {}
-                if difficulty > 4:
-                    all_scores[mcode][difficulty] = f"{int(difficulty) - 4},1,{record["rank"]},{record["lamp"]},{record["score"]},{record["ghostid"]},{flare},{flare},0"
-                else:
-                    all_scores[mcode][difficulty] = f"{difficulty},1,{record["rank"]},{record["lamp"]},{record["score"]},{record["ghostid"]},{flare},{flare},0"
+                all_scores[mcode][difficulty] = (
+                    f"{difficulty - 4 if difficulty > 4 else difficulty},"
+                    f"1,{record['rank']},{record['lamp']},{score},"
+                    f"{record['ghostid']},{flare},{flare},0"
+                )
     else:
         p = {}
         profile = {}
