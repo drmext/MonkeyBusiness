@@ -84,6 +84,7 @@ load_settings = {
         "combo_priority": "s32",
         "judge_priority": "s32",
         "judge_position": "s32",
+        "timing_music": "s32",
     },
     "lastplay": {
         "mode": "s32",
