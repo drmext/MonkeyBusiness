@@ -691,3 +691,19 @@ async def playdata_3_ghostdata_load(request: Request):
     response_body, response_headers = await core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
 
+
+@router.post("/{gameinfo}/playdata_3/mergeddata_load")
+async def playdata_3_mergeddata_load(request: Request):
+    request_info = await core_process_request(request)
+
+    response = E.response(
+        E.playdata_3(
+            E.result(0, __type="s32"),
+            E.league_class(0, __type="s32"),
+            E.is_advance_border_exceeded(0, __type="bool"),
+            E.is_exists_subscribed_user(0, __type="bool"),
+        )
+    )
+
+    response_body, response_headers = await core_prepare_response(request, response)
+    return Response(content=response_body, headers=response_headers)
