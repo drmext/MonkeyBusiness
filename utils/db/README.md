@@ -29,9 +29,9 @@ Instructions:
 
 ### [import_ddr_spice_automap.py](import_ddr_spice_automap.py)
 
-Example: `python utils\db\import_ddr_spice_automap.py --automap_xml automap_0.xml --version 19 --monkey_db db.json --ddr_id 12345678`
+Example: `python utils\db\import_ddr_spice_automap.py --automap_xml automap_0.xml --version 3 --monkey_db db.json --ddr_id 12345678`
 
-- `--version` 19 for A20P or 20 for A3
+- `--version` 1 for A20P, 2 for A3, 3 for WORLD (automap source version, not destination)
 
 - `--ddr_id` destination profile in db.json
 

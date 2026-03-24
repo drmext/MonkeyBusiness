@@ -58,6 +58,8 @@ async def playerdata_usergamedata_advanced(request: Request):
         if "ddr_id" not in all_profiles_for_card:
             ddr_id = random.randint(10000000, 99999999)
             all_profiles_for_card["ddr_id"] = ddr_id
+        else:
+            ddr_id = all_profiles_for_card["ddr_id"]
 
         all_profiles_for_card["version"][str(game_version)] = {
             "game_version": game_version,

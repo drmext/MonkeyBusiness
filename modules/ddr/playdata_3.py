@@ -233,7 +233,7 @@ async def playdata_3_playerdata_load(request: Request):
                 difficulty = int(record["difficulty"])
                 score = int(record["score"])
                 flare = int(record.get("flare_force", 0))
-                if flare == 0:
+                if flare in (-1, 0):
                     for k, v in flares:
                         if score >= k:
                             flare = v
@@ -644,7 +644,10 @@ async def playdata_3_playerdata_save(request: Request):
                 & (where("difficulty") == difficulty)
                 & (where("score") == max(score, best.get("score", score)))
             )
-            best_score_data["ghostid"] = ghostid.doc_id
+            if ghostid == None:
+                best_score_data["ghostid"] = -1
+            else:
+                best_score_data["ghostid"] = ghostid.doc_id
 
             db.table("ddr_scores_best").upsert(
                 best_score_data,
