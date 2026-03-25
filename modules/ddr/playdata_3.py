@@ -644,10 +644,10 @@ async def playdata_3_playerdata_save(request: Request):
                 & (where("difficulty") == difficulty)
                 & (where("score") == max(score, best.get("score", score)))
             )
-            if ghostid == None:
-                best_score_data["ghostid"] = -1
-            else:
+            if ghostid != None:
                 best_score_data["ghostid"] = ghostid.doc_id
+            else:
+                best_score_data["ghostid"] = -1
 
             db.table("ddr_scores_best").upsert(
                 best_score_data,

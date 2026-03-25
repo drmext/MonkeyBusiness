@@ -13,7 +13,7 @@ from utils.lz77 import lz77_decode
 import lxml.etree as ET
 import json
 import struct
-from typing import Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple
 from os import path
 
 
@@ -25,25 +25,34 @@ class DDR_Profile_Main_Items(BaseModel):
     pin: str
 
 
-class DDR_Profile_Version_Items(BaseModel):
-    game_version: int
-    calories_disp: bool
-    character: str
-    arrow_skin: str
-    filter: str
-    guideline: str
-    priority: str
-    timing_disp: bool
-    common: str
-    option: str
-    last: str
-    rival: str
-    rival_1_ddr_id: int
-    rival_2_ddr_id: int
-    rival_3_ddr_id: int
-    single_grade: int
-    double_grade: int
+class DDR_Profile_19_Items(BaseModel):
+    game_version: Optional[int]
+    calories_disp: Optional[bool]
+    character: Optional[str]
+    arrow_skin: Optional[str]
+    filter: Optional[str]
+    guideline: Optional[str]
+    priority: Optional[str]
+    timing_disp: Optional[bool]
+    common: Optional[str]
+    option: Optional[str]
+    last: Optional[str]
+    rival: Optional[str]
+    rival_1_ddr_id: Optional[int]
+    rival_2_ddr_id: Optional[int]
+    rival_3_ddr_id: Optional[int]
+    single_grade: Optional[int]
+    double_grade: Optional[int]
 
+
+class DDR_Profile_20_Items(BaseModel):
+    game_version: Optional[int]
+    common_dancername: Optional[str]
+    common_area: Optional[str]
+    rival_1_ddr_id: Optional[int]
+    rival_2_ddr_id: Optional[int]
+    rival_3_ddr_id: Optional[int]
+    customize: Optional[dict]
 
 @router.get("/profiles")
 async def ddr_profiles():
@@ -68,32 +77,48 @@ async def ddr_profile_id_patch(ddr_id: str, item: DDR_Profile_Main_Items):
     return Response(status_code=204)
 
 
-@router.patch("/profiles/{ddr_id}/{version}")
-async def ddr_profile_id_version_patch(
-    ddr_id: str, version: int, item: DDR_Profile_Version_Items
-):
+@router.patch("/profiles/{ddr_id}/19")
+async def ddr_profile_id_19_patch(ddr_id: str, item: DDR_Profile_19_Items):
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     profile = get_db().table("ddr_profile").get(where("ddr_id") == ddr_id)
-    game_profile = profile["version"].get(str(version), {})
+    game_profile = profile["version"].get("19", {})
 
-    if version >= 19:
-        game_profile["game_version"] = item.game_version
-        game_profile["calories_disp"] = "On" if item.calories_disp else "Off"
-        game_profile["character"] = item.character
-        game_profile["arrow_skin"] = item.arrow_skin
-        game_profile["filter"] = item.filter
-        game_profile["guideline"] = item.guideline
-        game_profile["priority"] = item.priority
-        game_profile["timing_disp"] = "On" if item.timing_disp else "Off"
-        game_profile["common"] = item.common
-        game_profile["option"] = item.option
-        game_profile["last"] = item.last
-        game_profile["rival"] = item.rival
-        game_profile["rival_1_ddr_id"] = item.rival_1_ddr_id
-        game_profile["rival_2_ddr_id"] = item.rival_2_ddr_id
-        game_profile["rival_3_ddr_id"] = item.rival_3_ddr_id
+    game_profile["game_version"] = item.game_version
+    game_profile["calories_disp"] = "On" if item.calories_disp else "Off"
+    game_profile["character"] = item.character
+    game_profile["arrow_skin"] = item.arrow_skin
+    game_profile["filter"] = item.filter
+    game_profile["guideline"] = item.guideline
+    game_profile["priority"] = item.priority
+    game_profile["timing_disp"] = "On" if item.timing_disp else "Off"
+    game_profile["common"] = item.common
+    game_profile["option"] = item.option
+    game_profile["last"] = item.last
+    game_profile["rival"] = item.rival
+    game_profile["rival_1_ddr_id"] = item.rival_1_ddr_id
+    game_profile["rival_2_ddr_id"] = item.rival_2_ddr_id
+    game_profile["rival_3_ddr_id"] = item.rival_3_ddr_id
 
-    profile["version"][str(version)] = game_profile
+    profile["version"]["19"] = game_profile
+    get_db().table("ddr_profile").upsert(profile, where("ddr_id") == ddr_id)
+    return Response(status_code=204)
+
+
+@router.patch("/profiles/{ddr_id}/20")
+async def ddr_profile_id_20_patch(ddr_id: str, item: DDR_Profile_20_Items):
+    ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
+    profile = get_db().table("ddr_profile").get(where("ddr_id") == ddr_id)
+    game_profile = profile["version"].get("20", {})
+
+    game_profile["game_version"] = item.game_version
+    game_profile["common_dancername"] = item.common_dancername
+    game_profile["common_area"] = item.common_area
+    game_profile["rival_1_ddr_id"] = item.rival_1_ddr_id
+    game_profile["rival_2_ddr_id"] = item.rival_2_ddr_id
+    game_profile["rival_3_ddr_id"] = item.rival_3_ddr_id
+    game_profile["customize"] = item.customize
+
+    profile["version"]["20"] = game_profile
     get_db().table("ddr_profile").upsert(profile, where("ddr_id") == ddr_id)
     return Response(status_code=204)
 

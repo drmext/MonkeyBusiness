@@ -10,7 +10,7 @@ Run [start.bat (Windows)](start.bat) or [start.sh (Linux, MacOS)](start.sh)
 
 ## Playable Games
 - IIDX 18-20, 29-33 (Online Arena/BPL support)
-- DDR A20P, A3, World (OmniMIX/GF, BPL, and [Fake PFREE](https://github.com/drmext/BemaniPatcher/blob/nopr/ddra3.html#L133) support)
+- DDR A20P, A3, WORLD (OmniMIX/GF, BPL, and [Fake PFREE](https://github.com/drmext/BemaniPatcher/blob/nopr/ddra3.html#L133) support)
 - GD 6-10 DELTA (Battle Mode support)
 - DRS
 - NOST 3
