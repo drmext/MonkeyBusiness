@@ -128,8 +128,15 @@ async def game_sv_common(ver: str, request: Request):
                 break
 
     if unlock == []:
+        
+        # ult_list = {636} #preparation for future ULT id
+        
         for i in range(2400):
-            for j in range(0, 5):
+            
+            j_limit = 6 if i == 636 else 5
+            #j_limit = 6 if i in ult_list else 5
+            
+            for j in range(j_limit):
                 unlock.append([i, j])
 
 
