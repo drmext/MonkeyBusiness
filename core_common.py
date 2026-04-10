@@ -119,6 +119,8 @@ async def core_get_game_version_from_software_version(software_version):
             return 1
 
     elif model == "MDX":
+        if ext >= 2024061200 and ext not in (2024042069, 2025042069): # GF
+            return 20
         if ext >= 2019022600:  # ???
             return 19
 

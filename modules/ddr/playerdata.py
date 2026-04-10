@@ -58,6 +58,8 @@ async def playerdata_usergamedata_advanced(request: Request):
         if "ddr_id" not in all_profiles_for_card:
             ddr_id = random.randint(10000000, 99999999)
             all_profiles_for_card["ddr_id"] = ddr_id
+        else:
+            ddr_id = all_profiles_for_card["ddr_id"]
 
         all_profiles_for_card["version"][str(game_version)] = {
             "game_version": game_version,
@@ -95,13 +97,11 @@ async def playerdata_usergamedata_advanced(request: Request):
             single_grade = profile.get("single_grade", 0)
             double_grade = profile.get("double_grade", 0)
 
-            for record in db.table("ddr_scores_best").search(
-                (where("game_version") == game_version) & (where("ddr_id") == ddr_id)
-            ):
+            for record in db.table("ddr_scores_best").search(where("ddr_id") == ddr_id):
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
                 if mcode not in all_scores:
-                    all_scores[mcode] = [[0, 0, 0, 0, 0] for x in range(10)]
+                    all_scores[mcode] = [[0, 0, 0, 0, 0] for x in range(9)] # not 10, there is no dp beginner
                 all_scores[mcode][difficulty] = [
                     1,
                     record["rank"],
@@ -109,6 +109,25 @@ async def playerdata_usergamedata_advanced(request: Request):
                     record["score"],
                     record["ghostid"],
                 ]
+
+
+        f = {}
+        for mcode in all_scores.keys():
+            if mcode not in f:
+                f[mcode] = []
+            for s in [score for score in all_scores.get(mcode)]:
+                if s[0] == 0:
+                    f[mcode].append(E.note())
+                else:
+                    f[mcode].append(
+                        E.note(
+                            E.count(s[0], __type="u16"),
+                            E.rank(s[1], __type="u8"),
+                            E.clearkind(s[2], __type="u8"),
+                            E.score(s[3], __type="s32"),
+                            E.ghostid(s[4], __type="s32"),
+                        )
+                    )
 
         response = E.response(
             E.playerdata(
@@ -120,17 +139,10 @@ async def playerdata_usergamedata_advanced(request: Request):
                     E.music(
                         E.mcode(int(mcode), __type="u32"),
                         *[
-                            E.note(
-                                E.count(s[0], __type="u16"),
-                                E.rank(s[1], __type="u8"),
-                                E.clearkind(s[2], __type="u8"),
-                                E.score(s[3], __type="s32"),
-                                E.ghostid(s[4], __type="s32"),
-                            )
-                            for s in [score for score in all_scores.get(mcode)]
+                            s for s in f.get(mcode)
                         ],
                     )
-                    for mcode in all_scores.keys()
+                    for mcode in f.keys()
                 ],
                 *[
                     E.eventdata(
@@ -306,7 +318,6 @@ async def playerdata_usergamedata_advanced(request: Request):
 
             best = db.table("ddr_scores_best").get(
                 (where("ddr_id") == ddr_id)
-                & (where("game_version") == game_version)
                 & (where("mcode") == mcode)
                 & (where("difficulty") == difficulty)
             )
@@ -326,17 +337,18 @@ async def playerdata_usergamedata_advanced(request: Request):
 
             ghostid = db.table("ddr_scores").get(
                 (where("ddr_id") == ddr_id)
-                & (where("game_version") == game_version)
                 & (where("mcode") == mcode)
                 & (where("difficulty") == difficulty)
                 & (where("score") == max(score, best.get("score", score)))
             )
-            best_score_data["ghostid"] = ghostid.doc_id
+            if ghostid != None:
+                best_score_data["ghostid"] = ghostid.doc_id
+            else:
+                best_score_data["ghostid"] = -1
 
             db.table("ddr_scores_best").upsert(
                 best_score_data,
                 (where("ddr_id") == ddr_id)
-                & (where("game_version") == game_version)
                 & (where("mcode") == mcode)
                 & (where("difficulty") == difficulty),
             )
@@ -386,8 +398,7 @@ async def playerdata_usergamedata_advanced(request: Request):
         if loadflag == 1:
             all_scores = {}
             for record in db.table("ddr_scores").search(
-                (where("game_version") == game_version)
-                & (where("pcbid") == pcbid)
+                (where("pcbid") == pcbid)
                 & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
@@ -414,8 +425,7 @@ async def playerdata_usergamedata_advanced(request: Request):
         elif loadflag == 2:
             all_scores = {}
             for record in db.table("ddr_scores").search(
-                (where("game_version") == game_version)
-                & (where("shoparea") == shoparea)
+                (where("shoparea") == shoparea)
                 & (where("ddr_id") != 0)
             ):
                 ddr_id = record["ddr_id"]
@@ -441,9 +451,7 @@ async def playerdata_usergamedata_advanced(request: Request):
 
         elif loadflag == 4:
             all_scores = {}
-            for record in db.table("ddr_scores").search(
-                (where("game_version") == game_version) & (where("ddr_id") != 0)
-            ):
+            for record in db.table("ddr_scores").search(where("ddr_id") != 0):
                 ddr_id = record["ddr_id"]
                 mcode = record["mcode"]
                 difficulty = record["difficulty"]
