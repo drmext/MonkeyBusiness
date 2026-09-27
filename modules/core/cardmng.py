@@ -60,7 +60,8 @@ async def cardmng_authpass(request: Request):
     cid = request_info["root"][0].attrib["refid"]
     passwd = request_info["root"][0].attrib["pass"]
 
-    profile = get_profile(request_info["model"], cid)
+    target_table = get_target_table(request_info["model"])
+    profile = get_db().table(target_table).get(where("card") == cid)
     if profile is None or passwd != profile.get("pin", None):
         status = 116
     else:

@@ -123,7 +123,11 @@ async def services_get(
 ):
     request_info = await core_process_request(request)
 
-    request_address = f"{urlparse(str(request.url)).netloc}:{config.port}"
+    parsed = urlparse(str(request.url))
+    if parsed.port is not None:
+        request_address = parsed.netloc
+    else:
+        request_address = f"{parsed.netloc}:{config.port}"
 
     services = {}
 
@@ -137,14 +141,11 @@ async def services_get(
         if model_whitelist and request_info["model"] not in model_whitelist:
             continue
 
-        if (
-            service.tags
-            and service.tags[0].startswith("api_")
-            or service.tags[0] == "slashless_forwarder"
-        ):
+        tag = service.tags[0] if service.tags else ""
+        if tag.startswith("api_") or tag == "slashless_forwarder":
             continue
 
-        k = (service.tags[0] if service.tags else service.prefix).strip("/")
+        k = (tag if tag else service.prefix).strip("/")
         if f == "services.get" or module == "services" and method == "get":
             # url_slash 0
             pre = "/fwdr"

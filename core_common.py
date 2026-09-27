@@ -1,13 +1,18 @@
 import config
 
+import threading
 import time
 
+from fastapi import HTTPException
 from lxml.builder import ElementMaker
 
 from kbinxml import KBinXML
 
 from utils.arc4 import EamuseARC4
 from utils.lz77 import lz77_decode, lz77_encode
+
+# Skip LZ77 for tiny bodies that always expand under AVS framing overhead.
+LZ77_MIN_RAW_BYTES = 256
 
 
 def _add_val_as_str(elm, val):
@@ -35,15 +40,52 @@ def _add_list_as_str(elm, vals):
         return new_val
 
 
-def _prng():
-    state = 0x41C64E6D
-    while True:
-        x = (state * 0x838C9CDA) + 0x6072
-        # state = (state * 0x41C64E6D + 0x3039)
-        # state = (state * 0x41C64E6D + 0x3039)
-        state = (state * 0xC2A29A69 + 0xD3DC167E) & 0xFFFFFFFF
-        yield (x & 0x7FFF0000) | state >> 0xF & 0xFFFF
-prng_init = _prng()
+_AVS_DEFAULT_SEED = 0x41C64E6D
+_avs_prng_lock = threading.Lock()
+_avs_prng_state = [0, 0]
+_avs_prng_ready = False
+
+
+def _avs_xorshift(state):
+    s0, s1 = state[0], state[1]
+    t = (s0 ^ ((s0 << 10) & 0xFFFFFFFF)) & 0xFFFFFFFF
+    t ^= t >> 13
+    r = (t ^ s1 ^ (s1 >> 10)) & 0xFFFFFFFF
+    state[0] = s1
+    state[1] = r
+    return r
+
+
+def _avs_seed(seed=0):
+    global _avs_prng_ready
+    if seed == 0:
+        seed = _AVS_DEFAULT_SEED
+    mixer = [0, seed & 0xFFFFFFFF]
+    _avs_prng_state[0] = _avs_xorshift(mixer)
+    _avs_prng_state[1] = _avs_xorshift(mixer)
+    _avs_xorshift(mixer)  # discarded, same as AVS
+    _avs_prng_ready = True
+
+
+def avs_prng_uint16():
+    with _avs_prng_lock:
+        if not _avs_prng_ready:
+            _avs_seed(0)
+        return _avs_xorshift(_avs_prng_state) & 0xFFFF
+
+
+def _parse_eamuse_info(header):
+    """Return (unix_bytes, prng_bytes) or raise HTTPException(400)."""
+    parts = header.split("-")
+    if len(parts) != 3 or parts[0] != "1":
+        raise HTTPException(status_code=400, detail="malformed X-Eamuse-Info")
+    unix_hex, prng_hex = parts[1], parts[2]
+    if len(unix_hex) != 8 or len(prng_hex) != 4:
+        raise HTTPException(status_code=400, detail="malformed X-Eamuse-Info")
+    try:
+        return bytes.fromhex(unix_hex), bytes.fromhex(prng_hex)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="malformed X-Eamuse-Info") from None
 
 
 E = ElementMaker(
@@ -144,14 +186,15 @@ async def core_process_request(request):
     data = await request.body()
 
     if not cl or not data:
-        return {}
+        raise HTTPException(status_code=400)
 
     request.compress = request.headers.get("X-Compress", "none") # intentionally lowercase 'none' (NOT None)
+    if request.compress not in ("none", "lz77"):
+        raise HTTPException(status_code=400, detail="unsupported X-Compress value")
 
     if "X-Eamuse-Info" in request.headers:
-        xeamuseinfo = request.headers.get("X-Eamuse-Info")
-        version, unix_time, prng = xeamuseinfo.split("-")
-        xml_dec = EamuseARC4(bytes.fromhex(unix_time), bytes.fromhex(prng)).decrypt(data[: int(cl)])
+        unix_bytes, prng_bytes = _parse_eamuse_info(request.headers.get("X-Eamuse-Info"))
+        xml_dec = EamuseARC4(unix_bytes, prng_bytes).decrypt(data[: int(cl)])
         request.is_encrypted = True
     else:
         xml_dec = data[: int(cl)]
@@ -162,12 +205,18 @@ async def core_process_request(request):
 
     xml = KBinXML(xml_dec, convert_illegal_things=True)
     root = xml.xml_doc
-    xml_text = xml.to_text()
     request.is_binxml = KBinXML.is_binary_xml(xml_dec)
 
+    xml_text = None
     if config.verbose_log:
+        xml_text = xml.to_text()
+        eamuse_info = (
+            request.headers.get("X-Eamuse-Info") if request.is_encrypted else "none"
+        )
         print()
         print("\033[94mREQUEST\033[0m:")
+        print(f"X-Eamuse-Info: {eamuse_info}")
+        print(f"X-Compress: {request.compress}")
         print(xml_text)
 
     model_parts = (root.attrib["model"], *root.attrib["model"].split(":"))
@@ -199,17 +248,19 @@ async def core_prepare_response(request, xml):
     else:
         xml_binary = binxml.to_text().encode("utf-8")  # TODO: Proper encoding
 
-    if config.verbose_log:
-        print("\033[91mRESPONSE\033[0m:")
-        print(binxml.to_text())
-
     response_headers = {"User-Agent": "EAMUSE.Httpac/1.0"}
 
-    if config.response_compression:
-        response_headers["X-Compress"] = request.compress
-        if request.compress == "lz77":
-            response = lz77_encode(xml_binary) # very slow
+    if config.response_compression and request.compress == "lz77":
+        if len(xml_binary) >= LZ77_MIN_RAW_BYTES:
+            encoded = lz77_encode(xml_binary)
+            if len(encoded) < len(xml_binary):
+                response_headers["X-Compress"] = "lz77"
+                response = encoded
+            else:
+                response_headers["X-Compress"] = "none"  # intentionally lowercase 'none' (NOT None)
+                response = xml_binary
         else:
+            response_headers["X-Compress"] = "none"  # intentionally lowercase 'none' (NOT None)
             response = xml_binary
     else:
         response_headers["X-Compress"] = "none" # intentionally lowercase 'none' (NOT None)
@@ -217,12 +268,17 @@ async def core_prepare_response(request, xml):
 
 
     if request.is_encrypted:
-        version = 1
-        unix_time = int(time.time())
-        prng = next(prng_init) & 0xFFFF
-        response_headers["X-Eamuse-Info"] = f"{version}-{unix_time:04x}-{prng:02x}"
+        unix_time = int(time.time()) & 0xFFFFFFFF
+        prng = avs_prng_uint16()
+        response_headers["X-Eamuse-Info"] = f"1-{unix_time:08x}-{prng:04x}"
         response = EamuseARC4(unix_time.to_bytes(4), prng.to_bytes(2)).encrypt(response)
     else:
         response = bytes(response)
+
+    if config.verbose_log:
+        print("\033[91mRESPONSE\033[0m:")
+        print(f"X-Eamuse-Info: {response_headers.get('X-Eamuse-Info', 'none')}")
+        print(f"X-Compress: {response_headers['X-Compress']}")
+        print(binxml.to_text())
 
     return response, response_headers
