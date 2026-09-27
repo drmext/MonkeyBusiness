@@ -1,29 +1,22 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import xml.etree.ElementTree as ET
 from os import path
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service="local", models=["PAN"])
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["PAN"]
-
-
-@router.post("/{gameinfo}/op3_common/get_common_info")
-async def op3_common_get_common_info(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("op3_common/get_common_info")
+async def op3_common_get_common_info(ctx: Ctx):
 
     response = E.response(
         E.get_common_info(E.olupdate(E.delete_flag(0, __type="bool")))
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/op3_common/get_music_info")
-async def op3_common_get_music_info(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("op3_common/get_music_info")
+async def op3_common_get_music_info(ctx: Ctx):
 
     songs = {}
 
@@ -150,5 +143,4 @@ async def op3_common_get_music_info(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

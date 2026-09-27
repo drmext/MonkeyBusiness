@@ -1,16 +1,12 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service=("local", "local2"), models=["KFC"])
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["KFC"]
-
-
-@router.post("/{gameinfo}/eventlog/write")
-async def sdvx_eventlog_write(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("eventlog/write")
+async def sdvx_eventlog_write(ctx: Ctx):
 
     response = E.response(
         E.eventlog(
@@ -21,5 +17,4 @@ async def sdvx_eventlog_write(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

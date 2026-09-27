@@ -1,25 +1,19 @@
-from fastapi import APIRouter, Request, Response
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 
-router = APIRouter(prefix="/core", tags=["ins"])
+set_xrpc_defaults(service="ins")
 
-
-@router.post("/{gameinfo}/ins/netlog")
-async def ins_netlog(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("ins/netlog")
+async def ins_netlog(ctx: Ctx):
 
     response = E.response(E.netlog(status=0))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/ins/send")
-async def ins_send(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("ins/send")
+async def ins_send(ctx: Ctx):
 
     response = E.response(E.netlog(status=0))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

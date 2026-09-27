@@ -1,32 +1,26 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 from tinydb import Query, where
 
 import random
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["PAN"]
-
+set_xrpc_defaults(service="local", models=["PAN"])
 
 def get_profile(cid):
     return get_db().table("nostalgia_profile").get(where("card") == cid)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
 
+@xrpc("op3_player/regist_playdata")
+async def op3_player_regist_playdata(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/op3_player/regist_playdata")
-async def op3_player_regist_playdata(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     dataid = root.find("dataid").text
     refid = root.find("refid").text
@@ -158,16 +152,13 @@ async def op3_player_regist_playdata(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("op3_player/get_musicdata")
+async def op3_player_get_musicdata(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/op3_player/get_musicdata")
-async def op3_player_get_musicdata(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    refid = request_info["root"][0].find("refid").text
+    refid = ctx.info["root"][0].find("refid").text
     profile = get_game_profile(refid, game_version)
     nostalgia_id = get_profile(refid)["nostalgia_id"]
 
@@ -214,16 +205,13 @@ async def op3_player_get_musicdata(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("op3_player/get_playdata")
+async def op3_player_get_playdata(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/op3_player/get_playdata")
-async def op3_player_get_playdata(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    refid = request_info["root"][0].find("refid").text
+    refid = ctx.info["root"][0].find("refid").text
     profile = get_game_profile(refid, game_version)
 
     response = E.response(
@@ -326,16 +314,13 @@ async def op3_player_get_playdata(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("op3_player/set_stage_result")
+async def op3_player_set_stage_result(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/op3_player/set_stage_result")
-async def op3_player_set_stage_result(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     refid = root.find("refid").text
     profile = get_profile(refid)
@@ -481,16 +466,13 @@ async def op3_player_set_stage_result(request: Request):
 
     response = E.response(E.set_stage_result(E.player()))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("op3_player/set_total_result")
+async def op3_player_set_total_result(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/op3_player/set_total_result")
-async def op3_player_set_total_result(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     refid = root.find("refid").text
     profile = get_profile(refid)
@@ -555,5 +537,4 @@ async def op3_player_set_total_result(request: Request):
 
     response = E.response(E.set_total_result(E.player()))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

@@ -1,14 +1,11 @@
-from fastapi import APIRouter, Request, Response
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["MDX"]
+set_xrpc_defaults(service="local", models=["MDX"])
 
-
-@router.post("/{gameinfo}/tax/get_phase")
-async def tax_get_phase(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("tax/get_phase")
+async def tax_get_phase(ctx: Ctx):
 
     response = E.response(
         E.tax(
@@ -16,5 +13,4 @@ async def tax_get_phase(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

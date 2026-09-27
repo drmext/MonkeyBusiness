@@ -1,126 +1,123 @@
-from urllib.parse import urlparse, urlunparse, urlencode
+"""Compose outer bare ASGI (e-amuse) with Starlette WebUI sub-app."""
 
-import uvicorn
+from __future__ import annotations
 
 import json
-from os import name, path
-from typing import Optional
+import re
+from os import path
+from urllib.parse import unquote, urlencode, urlparse, urlunparse
 
-from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from starlette.responses import RedirectResponse
-
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, RedirectResponse, Response
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Receive, Scope, Send
 import config
 import modules
 import utils.card as conv
-
-from core_common import core_process_request, core_prepare_response, E
-
-import socket
-
-
-def urlpathjoin(parts, sep="/"):
-    return sep + sep.join([x.lstrip(sep) for x in parts])
-
+from core_common import E, EamuseError, core_prepare_response, core_process_request
+from modules.registry import dispatch, iter_services
 
 loopback = "127.0.0.1"
 
-server_addresses = []
-for host in ("localhost", config.ip, socket.gethostname()):
-    server_addresses.append(f"{host}:{config.port}")
-
-server_services_urls = []
-for server_address in server_addresses:
-    server_services_urls.append(
-        urlunparse(("http", server_address, "/core", None, None, None))
+settings = {
+    s: getattr(config, s)
+    for s in (
+        "ip",
+        "port",
+        "response_compression",
+        "verbose_log",
+        "arcade",
+        "paseli",
+        "maintenance_mode",
     )
+}
 
-settings = {}
-for s in (
-    "ip",
-    "port",
-    "response_compression",
-    "verbose_log",
-    "arcade",
-    "paseli",
-    "maintenance_mode",
-):
-    settings[s] = getattr(config, s)
+# Paths handled by the Starlette WebUI / static sub-app
+_WEBUI_PREFIXES = ("/webui", "/ddr", "/iidx", "/gfdm", "/config", "/conv")
 
-app = FastAPI()
-for router in modules.routers:
-    app.include_router(router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+_CORE_SERVICES_GET = re.compile(
+    r"^/core/[^/]+/services/get/?$", re.IGNORECASE
 )
 
+# (model, slashless, request_address) -> service name -> url
+_services_url_cache: dict[tuple[str, bool, str], dict[str, str]] = {}
 
-if path.exists("webui"):
-    webui = True
-    with open(path.join("webui", "monkey.json"), "w") as f:
-        json.dump(settings, f, indent=2)
-    app.mount("/webui", StaticFiles(directory="webui", html=True), name="webui")
-else:
-    webui = False
-
-    @app.get("/webui")
-    async def redirect_to_config():
-        return RedirectResponse(url="/config")
-
-
-# Enable ANSI escape sequences
-if name == "nt":
-    import ctypes
-
-    kernel32 = ctypes.windll.kernel32
-    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
-
-
-if __name__ == "__main__":
-    print(
-        """
- █▄ ▄█ █▀█ █▄ █ █▄▀ ▀██ ▀▄▀
- █ ▀ █ █▄█ █ ▀█ █ █ ▄▄█  █
-
- ██▄ █ █ ▄▀▀ ▄█ █▄ █ ▀██ ▀█▀
- █▄█ ▀▄█ ▄██  █ █ ▀█ ▄▄█ █▄▄
-"""
+_KEEPALIVE_URL = urlunparse(
+    (
+        "http",
+        loopback,
+        "/keepalive",
+        None,
+        urlencode(
+            {
+                "pa": loopback,
+                "ia": loopback,
+                "ga": loopback,
+                "ma": loopback,
+                "t1": 2,
+                "t2": 10,
+            }
+        ),
+        None,
     )
-    print()
-    print("\033[1mGame Config\033[0m:")
-    for server_services_url in server_services_urls:
-        print(f"<services>\033[92m{server_services_url}\033[0m</services>")
-    print("<!-- url_slash \033[92m0\033[0m or \033[92m1\033[0m -->")
-    print()
-    print("\033[1mWeb Interface\033[0m:")
-    if webui:
-        for server_address in server_addresses:
-            print(f"http://{server_address}/webui/")
-    else:
-        print("/webui missing")
-        print("download it here: https://github.com/drmext/BounceTrippy/releases")
-    print()
-    print("\033[1mSource Repository\033[0m:")
-    print("https://github.com/drmext/MonkeyBusiness")
-    print()
-    uvicorn.run("pyeamu:app", host="0.0.0.0", port=config.port, reload=True)
+)
+_NTP_URL = urlunparse(("ntp", "pool.ntp.org", "/", None, None, None))
 
 
-@app.post("/core")
-@app.post("/core/{gameinfo}/services/get")
-async def services_get(
-    request: Request,
-    model: Optional[str] = None,
-    f: Optional[str] = None,
-    module: Optional[str] = None,
-    method: Optional[str] = None,
-):
+def _resolve_path_key(request: Request) -> str | None:
+    """Slashless (?f= / module+method) or slashed ({path}) -> module/method key."""
+    qp = request.query_params
+    f = qp.get("f")
+    module = qp.get("module")
+    method = qp.get("method")
+
+    if f is not None:
+        module, method = f.split(".", 1)
+
+    if module and method:
+        return f"{module}/{method}"
+
+    path_params = request.scope.get("path_params") or {}
+    if "path" in path_params:
+        return path_params["path"]
+
+    return None
+
+
+async def handle_xrpc(request: Request, *, model: str | None = None) -> Response:
+    if model is None:
+        model = request.query_params.get("model")
+    path_key = _resolve_path_key(request)
+    if not path_key:
+        return Response(status_code=404)
+    return await dispatch(request, model, path_key)
+
+
+def _services_for(model: str, slashless: bool, request_address: str) -> dict[str, str]:
+    key = (model, slashless, request_address)
+    cached = _services_url_cache.get(key)
+    if cached is not None:
+        return cached
+
+    services: dict[str, str] = {}
+    for service_name, prefix in iter_services(model):
+        if service_name in services:
+            continue
+        pre = "/fwdr" if slashless else prefix
+        services[service_name] = urlunparse(
+            ("http", request_address, pre, None, None, None)
+        )
+    services["keepalive"] = _KEEPALIVE_URL
+    services["ntp"] = _NTP_URL
+    _services_url_cache[key] = services
+    return services
+
+
+async def services_get(request: Request) -> Response:
     request_info = await core_process_request(request)
 
     parsed = urlparse(str(request.url))
@@ -129,51 +126,13 @@ async def services_get(
     else:
         request_address = f"{parsed.netloc}:{config.port}"
 
-    services = {}
+    qp = request.query_params
+    f = qp.get("f")
+    module = qp.get("module")
+    method = qp.get("method")
+    slashless = f == "services.get" or (module == "services" and method == "get")
 
-    for service in modules.routers:
-        model_blacklist = services.get("model_blacklist", [])
-        model_whitelist = services.get("model_whitelist", [])
-
-        if request_info["model"] in model_blacklist:
-            continue
-
-        if model_whitelist and request_info["model"] not in model_whitelist:
-            continue
-
-        tag = service.tags[0] if service.tags else ""
-        if tag.startswith("api_") or tag == "slashless_forwarder":
-            continue
-
-        k = (tag if tag else service.prefix).strip("/")
-        if f == "services.get" or module == "services" and method == "get":
-            # url_slash 0
-            pre = "/fwdr"
-        else:
-            # url_slash 1
-            pre = service.prefix
-        if k not in services:
-            services[k] = urlunparse(("http", request_address, pre, None, None, None))
-
-    keepalive_params = {
-        "pa": loopback,
-        "ia": loopback,
-        "ga": loopback,
-        "ma": loopback,
-        "t1": 2,
-        "t2": 10,
-    }
-    services["keepalive"] = urlunparse(
-        (
-            "http",
-            loopback,
-            "/keepalive",
-            None,
-            urlencode(keepalive_params),
-            None,
-        )
-    )
-    services["ntp"] = urlunparse(("ntp", "pool.ntp.org", "/", None, None, None))
+    services = _services_for(request_info["model"], slashless, request_address)
 
     response = E.response(
         E.services(
@@ -184,29 +143,21 @@ async def services_get(
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
+    response_body, response_headers = core_prepare_response(request, response)
     return Response(content=response_body, headers=response_headers)
 
 
-@app.get("/")
-async def redirect_to_webui():
+async def redirect_to_webui(request: Request) -> Response:
     return RedirectResponse(url="/webui")
 
 
-@app.get("/config")
-async def get_config():
-    return settings
+async def get_config(request: Request) -> Response:
+    return JSONResponse(settings)
 
 
-@app.get("/conv/{card}")
-async def card_conv(card: str):
-    card = card.upper()
-    lookalike = {
-        "I": "1",
-        "O": "0",
-        "Q": "0",
-        "V": "U",
-    }
+async def card_conv(request: Request) -> Response:
+    card = request.path_params["card"].upper()
+    lookalike = {"I": "1", "O": "0", "Q": "0", "V": "U"}
     for k, v in lookalike.items():
         card = card.replace(k, v)
     if card.startswith("E004") or card.startswith("012E"):
@@ -217,4 +168,92 @@ async def card_conv(card: str):
         card = "".join([c for c in card if c in conv.valid_characters])
         uid = conv.to_uid(card)
         kid = card
-    return {"uid": uid, "konami_id": kid}
+    return JSONResponse({"uid": uid, "konami_id": kid})
+
+
+async def redirect_webui_missing(request: Request) -> Response:
+    return RedirectResponse(url="/config")
+
+
+def _build_webui() -> Starlette:
+    routes: list = [
+        Route("/", redirect_to_webui, methods=["GET"]),
+        Route("/config", get_config, methods=["GET"]),
+        Route("/conv/{card}", card_conv, methods=["GET"]),
+    ]
+
+    for mount_path, api_router in modules.webui_routers:
+        routes.insert(0, Mount(mount_path, app=api_router))
+
+    if path.exists("webui"):
+        with open(path.join("webui", "monkey.json"), "w") as f:
+            json.dump(settings, f, indent=2)
+        routes.insert(0, Mount("/webui", app=StaticFiles(directory="webui", html=True)))
+    else:
+        routes.insert(0, Route("/webui", redirect_webui_missing, methods=["GET"]))
+
+    middleware = [
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    ]
+    return Starlette(routes=routes, middleware=middleware)
+
+
+webui_app: ASGIApp = _build_webui()
+has_webui = path.exists("webui")
+
+
+async def _send_response(response: Response, scope: Scope, receive: Receive, send: Send) -> None:
+    await response(scope, receive, send)
+
+
+async def app(scope: Scope, receive: Receive, send: Send) -> None:
+    if scope["type"] == "lifespan":
+        await webui_app(scope, receive, send)
+        return
+
+    if scope["type"] != "http":
+        return
+
+    raw_path = unquote(scope.get("path") or "")
+    method = scope.get("method", "GET").upper()
+
+    # WebUI / static / config / card converter
+    if raw_path == "/" or any(
+        raw_path == p or raw_path.startswith(p + "/") for p in _WEBUI_PREFIXES
+    ):
+        await webui_app(scope, receive, send)
+        return
+
+    if method != "POST":
+        await _send_response(Response(status_code=404), scope, receive, send)
+        return
+
+    request = Request(scope, receive)
+
+    try:
+        # services.get
+        if raw_path.rstrip("/") == "/core" or _CORE_SERVICES_GET.match(raw_path):
+            response = await services_get(request)
+        elif raw_path.rstrip("/") == "/fwdr":
+            response = await handle_xrpc(request)
+        else:
+            # slashed: /{svc}/{gameinfo}/{path...} — model is the gameinfo segment
+            parts = [p for p in raw_path.strip("/").split("/") if p]
+            if len(parts) >= 3:
+                scope = dict(scope)
+                scope["path_params"] = {"path": "/".join(parts[2:])}
+                request = Request(scope, receive)
+                model = request.query_params.get("model") or parts[1]
+                response = await handle_xrpc(request, model=model)
+            else:
+                response = Response(status_code=404)
+    except EamuseError as exc:
+        response = Response(status_code=exc.status_code, content=exc.detail or b"")
+
+    await _send_response(response, scope, receive, send)

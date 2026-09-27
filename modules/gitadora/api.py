@@ -1,16 +1,14 @@
-from fastapi import APIRouter, Request, Response
+from typing import Optional
 
-from core_common import core_process_request, core_prepare_response, E
-
-from tinydb import Query, where
-from core_database import get_db
 from pydantic import BaseModel
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.routing import Route, Router
+from tinydb import where
 
-import config
 import utils.card as conv
-
-
-router = APIRouter(prefix="/gfdm", tags=["api_gfdm"])
+from core_database import get_db
+from modules.webapi import endpoint, read_model
 
 
 class GFDM_Profile_Main_Items(BaseModel):
@@ -25,19 +23,22 @@ class GFDM_Profile_Version_Items(BaseModel):
     rival_card_ids: list = []
 
 
-@router.get("/profiles")
-async def gfdm_profiles():
+@endpoint
+async def gfdm_profiles(request: Request):
     return get_db().table("gitadora_profile").all()
 
 
-@router.get("/profiles/{gitadora_id}")
-async def gfdm_profile_id(gitadora_id: str):
+@endpoint
+async def gfdm_profile_id(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     return get_db().table("gitadora_profile").get(where("gitadora_id") == gitadora_id)
 
 
-@router.patch("/profiles/{gitadora_id}")
-async def gfdm_profile_id_patch(gitadora_id: str, item: GFDM_Profile_Main_Items):
+@endpoint
+async def gfdm_profile_id_patch(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
+    item = await read_model(request, GFDM_Profile_Main_Items)
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     profile = (
         get_db().table("gitadora_profile").get(where("gitadora_id") == gitadora_id)
@@ -52,10 +53,11 @@ async def gfdm_profile_id_patch(gitadora_id: str, item: GFDM_Profile_Main_Items)
     return Response(status_code=204)
 
 
-@router.patch("/profiles/{gitadora_id}/{version}")
-async def gfdm_profile_id_version_patch(
-    gitadora_id: str, version: int, item: GFDM_Profile_Version_Items
-):
+@endpoint
+async def gfdm_profile_id_version_patch(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
+    version = int(request.path_params["version"])
+    item = await read_model(request, GFDM_Profile_Version_Items)
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     profile = (
         get_db().table("gitadora_profile").get(where("gitadora_id") == gitadora_id)
@@ -74,8 +76,9 @@ async def gfdm_profile_id_version_patch(
     return Response(status_code=204)
 
 
-@router.get("/card/{card}")
-async def gfdm_card_to_profile(card: str):
+@endpoint
+async def gfdm_card_to_profile(request: Request):
+    card = request.path_params["card"]
     card = card.upper()
     lookalike = {
         "I": "1",
@@ -97,26 +100,28 @@ async def gfdm_card_to_profile(card: str):
     return profile
 
 
-@router.get("/drummania/scores")
-async def dm_scores():
+@endpoint
+async def dm_scores(request: Request):
     return get_db().table("drummania_scores").all()
 
 
-@router.get("/guitarfreaks/scores")
-async def gf_scores():
+@endpoint
+async def gf_scores(request: Request):
     return get_db().table("guitarfreaks_scores").all()
 
 
-@router.get("/drummania/scores/{gitadora_id}")
-async def dm_scores_id(gitadora_id: str):
+@endpoint
+async def dm_scores_id(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     return (
         get_db().table("drummania_scores").search((where("gitadora_id") == gitadora_id))
     )
 
 
-@router.get("/guitarfreaks/scores/{gitadora_id}")
-async def gf_scores_id(gitadora_id: str):
+@endpoint
+async def gf_scores_id(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     return (
         get_db()
@@ -125,18 +130,19 @@ async def gf_scores_id(gitadora_id: str):
     )
 
 
-@router.get("/drummania/scores_best")
-async def dm_scores_best():
+@endpoint
+async def dm_scores_best(request: Request):
     return get_db().table("drummania_scores_best").all()
 
 
-@router.get("/guitarfreaks/scores_best")
-async def gf_scores_best():
+@endpoint
+async def gf_scores_best(request: Request):
     return get_db().table("guitarfreaks_scores_best").all()
 
 
-@router.get("/drummania/scores_best/{gitadora_id}")
-async def dm_scores_best_id(gitadora_id: str):
+@endpoint
+async def dm_scores_best_id(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     return (
         get_db()
@@ -145,8 +151,9 @@ async def dm_scores_best_id(gitadora_id: str):
     )
 
 
-@router.get("/guitarfreaks/scores_best/{gitadora_id}")
-async def gf_scores_best_id(gitadora_id: str):
+@endpoint
+async def gf_scores_best_id(request: Request):
+    gitadora_id = request.path_params["gitadora_id"]
     gitadora_id = int("".join([i for i in gitadora_id if i.isnumeric()]))
     return (
         get_db()
@@ -155,21 +162,60 @@ async def gf_scores_best_id(gitadora_id: str):
     )
 
 
-@router.get("/drummania/mcode/{mcode}/all")
-async def dm_scores_id(mcode: int):
+@endpoint
+async def dm_scores_mcode_all(request: Request):
+    mcode = int(request.path_params["mcode"])
     return get_db().table("drummania_scores").search((where("mcode") == mcode))
 
 
-@router.get("/guitarfreaks/mcode/{mcode}/all")
-async def gf_scores_id(mcode: int):
+@endpoint
+async def gf_scores_mcode_all(request: Request):
+    mcode = int(request.path_params["mcode"])
     return get_db().table("guitarfreaks_scores").search((where("mcode") == mcode))
 
 
-@router.get("/drummania/mcode/{mcode}/best")
-async def dm_scores_id_best(mcode: int):
+@endpoint
+async def dm_scores_mcode_best(request: Request):
+    mcode = int(request.path_params["mcode"])
     return get_db().table("drummania_scores_best").search((where("mcode") == mcode))
 
 
-@router.get("/guitarfreaks/mcode/{mcode}/best")
-async def gf_scores_id_best(mcode: int):
+@endpoint
+async def gf_scores_mcode_best(request: Request):
+    mcode = int(request.path_params["mcode"])
     return get_db().table("guitarfreaks_scores_best").search((where("mcode") == mcode))
+
+
+router = Router(
+    routes=[
+        Route("/profiles", gfdm_profiles, methods=["GET"]),
+        Route("/profiles/{gitadora_id}", gfdm_profile_id, methods=["GET"]),
+        Route("/profiles/{gitadora_id}", gfdm_profile_id_patch, methods=["PATCH"]),
+        Route(
+            "/profiles/{gitadora_id}/{version}",
+            gfdm_profile_id_version_patch,
+            methods=["PATCH"],
+        ),
+        Route("/card/{card}", gfdm_card_to_profile, methods=["GET"]),
+        Route("/drummania/scores", dm_scores, methods=["GET"]),
+        Route("/guitarfreaks/scores", gf_scores, methods=["GET"]),
+        Route("/drummania/scores/{gitadora_id}", dm_scores_id, methods=["GET"]),
+        Route("/guitarfreaks/scores/{gitadora_id}", gf_scores_id, methods=["GET"]),
+        Route("/drummania/scores_best", dm_scores_best, methods=["GET"]),
+        Route("/guitarfreaks/scores_best", gf_scores_best, methods=["GET"]),
+        Route(
+            "/drummania/scores_best/{gitadora_id}",
+            dm_scores_best_id,
+            methods=["GET"],
+        ),
+        Route(
+            "/guitarfreaks/scores_best/{gitadora_id}",
+            gf_scores_best_id,
+            methods=["GET"],
+        ),
+        Route("/drummania/mcode/{mcode}/all", dm_scores_mcode_all, methods=["GET"]),
+        Route("/guitarfreaks/mcode/{mcode}/all", gf_scores_mcode_all, methods=["GET"]),
+        Route("/drummania/mcode/{mcode}/best", dm_scores_mcode_best, methods=["GET"]),
+        Route("/guitarfreaks/mcode/{mcode}/best", gf_scores_mcode_best, methods=["GET"]),
+    ]
+)

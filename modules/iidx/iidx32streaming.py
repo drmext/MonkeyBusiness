@@ -1,28 +1,20 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service="local", models=["LDJ"])
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ"]
-
-
-@router.post("/{gameinfo}/IIDX32streaming/common")
-async def iidx32streaming_common(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX32streaming/common")
+async def iidx32streaming_common(ctx: Ctx):
 
     response = E.response(E.IIDX32streaming())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX32streaming/getcm")
-async def iidx32streaming_getcm(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX32streaming/getcm")
+async def iidx32streaming_getcm(ctx: Ctx):
 
     response = E.response(E.IIDX32streaming())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

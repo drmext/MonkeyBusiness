@@ -1,21 +1,20 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
 from tinydb import where
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
-
-router = APIRouter(prefix="/core", tags=["eacoin"])
 
 sessid = 0
 payments = {}
 
-@router.post("/{gameinfo}/eacoin/checkin")
-async def eacoin_checkin(request: Request):
-    request_info = await core_process_request(request)
-    pcbid = request_info["root"].attrib["srcid"]
-    cardid = request_info["root"][0].find("cardid").text
+set_xrpc_defaults(service="eacoin")
+
+@xrpc("eacoin/checkin")
+async def eacoin_checkin(ctx: Ctx):
+    pcbid = ctx.info["root"].attrib["srcid"]
+    cardid = ctx.info["root"][0].find("cardid").text
 
     op = get_db().table("shop").get(where("pcbid") == pcbid)
     op = {} if op is None else op
@@ -39,31 +38,25 @@ async def eacoin_checkin(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/eacoin/checkout")
-async def eacoin_checkout(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("eacoin/checkout")
+async def eacoin_checkout(ctx: Ctx):
 
     response = E.response(E.eacoin())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/eacoin/consume")
-async def eacoin_consume(request: Request):
-    request_info = await core_process_request(request)
-    sessid = int(request_info["root"][0].find("sessid").text)
-    payment = int(request_info["root"][0].find("payment").text)
+@xrpc("eacoin/consume")
+async def eacoin_consume(ctx: Ctx):
+    sessid = int(ctx.info["root"][0].find("sessid").text)
+    payment = int(ctx.info["root"][0].find("payment").text)
 
     cardid = payments.get(sessid, None)
 
     # fallback if server is restarted mid-round for IIDX movie or gacha purchases
-    if cardid == None:
-        response = E.response(
+    if cardid is None:
+        return E.response(
             E.eacoin(
                 E.acstatus(0, __type="u8"),
                 E.autocharge(0, __type="u8"),
@@ -71,11 +64,8 @@ async def eacoin_consume(request: Request):
             )
         )
 
-        response_body, response_headers = await core_prepare_response(request, response)
-        return Response(content=response_body, headers=response_headers)
-
     bal = get_db().table("paseli").get(where("cardid") == cardid)
-    if bal == None:
+    if bal is None:
         bal = {
             "cardid": cardid,
             "balance": config.paseli,
@@ -105,13 +95,10 @@ async def eacoin_consume(request: Request):
 
     # del payments[sessid]
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/eacoin/getbalance")
-async def eacoin_getbalance(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("eacoin/getbalance")
+async def eacoin_getbalance(ctx: Ctx):
 
     response = E.response(
         E.eacoin(
@@ -120,5 +107,4 @@ async def eacoin_getbalance(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

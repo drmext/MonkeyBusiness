@@ -1,18 +1,14 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import time
 import random
 from enum import IntEnum
 
-from fastapi import APIRouter, Request, Response
 from tinydb import where
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
 import config
-
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["LDJ"]
-
 
 class ClearFlags(IntEnum):
     NO_PLAY = 0
@@ -24,13 +20,13 @@ class ClearFlags(IntEnum):
     EX_HARD_CLEAR = 6
     FULL_COMBO = 7
 
+set_xrpc_defaults(service="local2", models=["LDJ"])
 
-@router.post("/{gameinfo}/IIDX31music/getrank")
-async def iidx31music_getrank(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("IIDX31music/getrank")
+async def iidx31music_getrank(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     play_style = int(root.attrib["cltype"])
 
@@ -151,14 +147,11 @@ async def iidx31music_getrank(request: Request):
 
     assert response is not None
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX31music/crate")
-async def iidx31music_crate(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("IIDX31music/crate")
+async def iidx31music_crate(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     db = get_db()
     all_score_stats = db.table("iidx_score_stats").search(
@@ -185,23 +178,20 @@ async def iidx31music_crate(request: Request):
         E.IIDX31music(*[E.c(crate[k] + fcrate[k], mid=k, __type="s32") for k in crate])
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX31music/reg")
-async def iidx31music_reg(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("IIDX31music/reg")
+async def iidx31music_reg(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     timestamp = time.time()
 
-    log = request_info["root"][0].find("music_play_log")
+    log = ctx.info["root"][0].find("music_play_log")
 
-    clear_flg = int(request_info["root"][0].attrib["cflg"])
-    clid = int(request_info["root"][0].attrib["clid"])
-    is_death = int(request_info["root"][0].attrib["is_death"])
-    pid = int(request_info["root"][0].attrib["pid"])
+    clear_flg = int(ctx.info["root"][0].attrib["cflg"])
+    clid = int(ctx.info["root"][0].attrib["clid"])
+    is_death = int(ctx.info["root"][0].attrib["is_death"])
+    pid = int(ctx.info["root"][0].attrib["pid"])
 
     play_style = int(log.attrib["play_style"])
     ex_score = int(log.attrib["ex_score"])
@@ -400,15 +390,12 @@ async def iidx31music_reg(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("IIDX31music/appoint")
+async def iidx31music_appoint(ctx: Ctx):
 
-@router.post("/{gameinfo}/IIDX31music/appoint")
-async def iidx31music_appoint(request: Request):
-    request_info = await core_process_request(request)
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     iidxid = int(root.attrib["iidxid"])
     music_id = int(root.attrib["mid"])
@@ -476,15 +463,12 @@ async def iidx31music_appoint(request: Request):
 
     response = E.response(E.IIDX31music(*vals))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("IIDX31music/arenaCPU")
+async def iidx31music_arenacpu(ctx: Ctx):
 
-@router.post("/{gameinfo}/IIDX31music/arenaCPU")
-async def iidx31music_arenacpu(request: Request):
-    request_info = await core_process_request(request)
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
     music_list = root.findall("music_list")
     music_count = len(music_list)
     cpu_list = root.findall("cpu_list")
@@ -535,13 +519,10 @@ async def iidx31music_arenacpu(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX31music/retry")
-async def iidx31music_retry(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX31music/retry")
+async def iidx31music_retry(ctx: Ctx):
 
     response = E.response(
         E.IIDX31music(
@@ -550,32 +531,24 @@ async def iidx31music_retry(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX31music/play")
-async def iidx31music_play(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX31music/play")
+async def iidx31music_play(ctx: Ctx):
 
     response = E.response(E.IIDX31music())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX31music/nosave")
-async def iidx31music_nosave(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX31music/nosave")
+async def iidx31music_nosave(ctx: Ctx):
 
     response = E.response(E.IIDX31music())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-@router.post("/{gameinfo}/IIDX31music/movieinfo")
-async def iidx31music_movieinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX31music/movieinfo")
+async def iidx31music_movieinfo(ctx: Ctx):
 
     response = E.response(
         E.IIDX31music(
@@ -583,5 +556,4 @@ async def iidx31music_movieinfo(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

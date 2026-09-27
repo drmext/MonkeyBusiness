@@ -1,37 +1,30 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 from tinydb import Query, where
 
 from time import time
 import config
 import random
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["LDJ"]
-
+set_xrpc_defaults(service="local2", models=["LDJ"])
 
 def get_profile(cid):
     return get_db().table("iidx_profile").get(where("card") == cid)
 
-
 def get_profile_by_id(iidx_id):
     return get_db().table("iidx_profile").get(where("iidx_id") == iidx_id)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
 
-
 def get_game_profile_by_id(iidx_id, game_version):
     profile = get_profile_by_id(iidx_id)
 
     return profile["version"].get(str(game_version), None)
-
 
 def get_id_from_profile(cid):
     profile = get_db().table("iidx_profile").get(where("card") == cid)
@@ -40,7 +33,6 @@ def get_id_from_profile(cid):
     djid_split = "-".join([djid[:4], djid[4:]])
 
     return profile["iidx_id"], djid_split
-
 
 def calculate_folder_mask(profile):
     return (
@@ -57,13 +49,11 @@ def calculate_folder_mask(profile):
         | (profile.get("_hide_iidx_id", 0) << 12)
     )
 
+@xrpc("IIDX30pc/get")
+async def iidx30pc_get(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/IIDX30pc/get")
-async def iidx30pc_get(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    cid = request_info["root"][0].attrib["cid"]
+    cid = ctx.info["root"][0].attrib["cid"]
     profile = get_game_profile(cid, game_version)
     djid, djid_split = get_id_from_profile(cid)
 
@@ -716,13 +706,10 @@ async def iidx30pc_get(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/common")
-async def iidx30pc_common(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/common")
+async def iidx30pc_common(ctx: Ctx):
 
     response = E.response(
         E.IIDX30pc(
@@ -758,7 +745,7 @@ async def iidx30pc_common(request: Request):
             E.movie_agreement(version=1),
             E.license("None", __type="str"),
             E.file_recovery(url=str(config.ip)),
-            E.movie_upload(url=f"http://{str(request.client.host)}:4399/movie/"), # use https://github.com/bookqaq/010-record-api
+            E.movie_upload(url=f"http://{str(ctx.request.client.host)}:4399/movie/"), # use https://github.com/bookqaq/010-record-api
             # E.button_release_frame(frame=''),
             # E.trigger_logic_type(type=''),
             # E.cm_movie_info(type=''),
@@ -794,18 +781,15 @@ async def iidx30pc_common(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("IIDX30pc/save")
+async def iidx30pc_save(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/IIDX30pc/save")
-async def iidx30pc_save(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    xid = int(request_info["root"][0].attrib["iidxid"])
-    cid = request_info["root"][0].attrib["cid"]
-    clt = int(request_info["root"][0].attrib["cltype"])
+    xid = int(ctx.info["root"][0].attrib["iidxid"])
+    cid = ctx.info["root"][0].attrib["cid"]
+    clt = int(ctx.info["root"][0].attrib["cltype"])
 
     profile = get_profile(cid)
     game_profile = profile["version"].get(str(game_version), {})
@@ -868,8 +852,8 @@ async def iidx30pc_save(request: Request):
         "s_visualization",
         "sp_opt",
     ]:
-        if k in request_info["root"][0].attrib:
-            game_profile[k] = request_info["root"][0].attrib[k]
+        if k in ctx.info["root"][0].attrib:
+            game_profile[k] = ctx.info["root"][0].attrib[k]
 
     for k in [
         ("d_liflen", "d_lift"),
@@ -877,10 +861,10 @@ async def iidx30pc_save(request: Request):
         ("s_liflen", "s_lift"),
         ("sach", "s_achi"),
     ]:
-        if k[1] in request_info["root"][0].attrib:
-            game_profile[k[0]] = request_info["root"][0].attrib[k[1]]
+        if k[1] in ctx.info["root"][0].attrib:
+            game_profile[k[0]] = ctx.info["root"][0].attrib[k[1]]
 
-    lightning_setting = request_info["root"][0].find("lightning_setting")
+    lightning_setting = ctx.info["root"][0].find("lightning_setting")
     if lightning_setting is not None:
         for k in [
             "headphone_vol",
@@ -907,17 +891,17 @@ async def iidx30pc_save(request: Request):
         if concentration is not None:
             game_profile["lightning_setting_concentration"] = int(concentration.text)
 
-    movie_agreement = request_info["root"][0].find("movie_agreement")
+    movie_agreement = ctx.info["root"][0].find("movie_agreement")
     if movie_agreement is not None and "agreement_version" in movie_agreement.attrib:
         game_profile["movie_agreement"] = int(
             movie_agreement.attrib["agreement_version"]
         )
 
-    hide_name = request_info["root"][0].find("movie_setting/hide_name")
+    hide_name = ctx.info["root"][0].find("movie_setting/hide_name")
     if hide_name is not None:
         game_profile["hide_name"] = int(hide_name.text)
 
-    lightning_customize_flg = request_info["root"][0].find("lightning_customize_flg")
+    lightning_customize_flg = ctx.info["root"][0].find("lightning_customize_flg")
     if lightning_customize_flg is not None:
         for k in [
             "flg_skin_0",
@@ -926,21 +910,21 @@ async def iidx30pc_save(request: Request):
                 lightning_customize_flg.attrib[k]
             )
 
-    secret = request_info["root"][0].find("secret")
+    secret = ctx.info["root"][0].find("secret")
     if secret is not None:
         for k in ["flg1", "flg2", "flg3", "flg4"]:
             flg = secret.find(k)
             if flg is not None:
                 game_profile["secret_" + k] = [int(x) for x in flg.text.split(" ")]
 
-    leggendaria = request_info["root"][0].find("leggendaria")
+    leggendaria = ctx.info["root"][0].find("leggendaria")
     if leggendaria is not None:
         for k in ["flg1"]:
             flg = leggendaria.find(k)
             if flg is not None:
                 game_profile["leggendaria_" + k] = [int(x) for x in flg.text.split(" ")]
 
-    step = request_info["root"][0].find("step")
+    step = ctx.info["root"][0].find("step")
     if step is not None:
         for k in [
             "dp_fluctuation",
@@ -962,7 +946,7 @@ async def iidx30pc_save(request: Request):
         if is_track_ticket is not None:
             game_profile["stepup_is_track_ticket"] = int(is_track_ticket.text)
 
-    dj_ranks = request_info["root"][0].findall("dj_rank")
+    dj_ranks = ctx.info["root"][0].findall("dj_rank")
     dj_ranks = [] if dj_ranks is None else dj_ranks
     for dj_rank in dj_ranks:
         style = int(dj_rank.attrib["style"])
@@ -977,7 +961,7 @@ async def iidx30pc_save(request: Request):
             int(x) for x in point.text.split(" ")
         ]
 
-    notes_radars = request_info["root"][0].findall("notes_radar")
+    notes_radars = ctx.info["root"][0].findall("notes_radar")
     notes_radars = [] if notes_radars is None else notes_radars
     for notes_radar in notes_radars:
         style = int(notes_radar.attrib["style"])
@@ -986,7 +970,7 @@ async def iidx30pc_save(request: Request):
             int(x) for x in score.text.split(" ")
         ]
 
-    achievements = request_info["root"][0].find("achievements")
+    achievements = ctx.info["root"][0].find("achievements")
     if achievements is not None:
         for k in [
             "last_weekly",
@@ -1005,7 +989,7 @@ async def iidx30pc_save(request: Request):
                 int(x) for x in trophy.text.split(" ")
             ]
 
-    grade = request_info["root"][0].find("grade")
+    grade = ctx.info["root"][0].find("grade")
     if grade is not None:
         grade_values = []
         for g in grade.findall("g"):
@@ -1016,12 +1000,12 @@ async def iidx30pc_save(request: Request):
         profile["grade_values"] = grade_values
 
     deller_amount = game_profile.get("deller", 0)
-    deller = request_info["root"][0].find("deller")
+    deller = ctx.info["root"][0].find("deller")
     if deller is not None:
         deller_amount = int(deller.attrib["deller"])
     game_profile["deller"] = deller_amount
 
-    language = request_info["root"][0].find("language_setting")
+    language = ctx.info["root"][0].find("language_setting")
     if language is not None:
         language_value = int(language.attrib["language"])
         game_profile["language_setting"] = language_value
@@ -1029,7 +1013,7 @@ async def iidx30pc_save(request: Request):
     game_profile["spnum"] = game_profile.get("spnum", 0) + (1 if clt == 0 else 0)
     game_profile["dpnum"] = game_profile.get("dpnum", 0) + (1 if clt == 1 else 0)
 
-    if request_info["model"] == "TDJ":
+    if ctx.info["model"] == "TDJ":
         game_profile["lightning_play_data_spnum"] = game_profile.get(
             "lightning_play_data_spnum", 0
         ) + (1 if clt == 0 else 0)
@@ -1043,13 +1027,10 @@ async def iidx30pc_save(request: Request):
 
     response = E.response(E.IIDX30pc(iidxid=xid, cltype=clt))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/visit")
-async def iidx30pc_visit(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/visit")
+async def iidx30pc_visit(ctx: Ctx):
 
     response = E.response(
         E.IIDX30pc(
@@ -1062,18 +1043,15 @@ async def iidx30pc_visit(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("IIDX30pc/reg")
+async def iidx30pc_reg(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/IIDX30pc/reg")
-async def iidx30pc_reg(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    cid = request_info["root"][0].attrib["cid"]
-    name = request_info["root"][0].attrib["name"]
-    pid = request_info["root"][0].attrib["pid"]
+    cid = ctx.info["root"][0].attrib["cid"]
+    name = ctx.info["root"][0].attrib["name"]
+    pid = ctx.info["root"][0].attrib["pid"]
 
     db = get_db().table("iidx_profile")
     all_profiles_for_card = db.get(Query().card == cid)
@@ -1270,13 +1248,10 @@ async def iidx30pc_reg(request: Request):
 
     response = E.response(E.IIDX30pc(id=card, id_str=card_split))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/getLaneGachaTicket")
-async def iidx30pc_getlanegachaticket(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/getLaneGachaTicket")
+async def iidx30pc_getlanegachaticket(ctx: Ctx):
 
     response = E.response(
         E.IIDX30pc(
@@ -1305,23 +1280,17 @@ async def iidx30pc_getlanegachaticket(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/consumeLaneGachaTicket")
-async def iidx30pc_consumelanegachaticket(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/consumeLaneGachaTicket")
+async def iidx30pc_consumelanegachaticket(ctx: Ctx):
 
     response = E.response(E.IIDX30pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/drawLaneGacha")
-async def iidx30pc_drawlanegacha(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/drawLaneGacha")
+async def iidx30pc_drawlanegacha(ctx: Ctx):
 
     response = E.response(
         E.IIDX30pc(
@@ -1335,54 +1304,39 @@ async def iidx30pc_drawlanegacha(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/eaappliresult")
-async def iidx30pc_eaappliresult(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/eaappliresult")
+async def iidx30pc_eaappliresult(ctx: Ctx):
 
     response = E.response(E.IIDX30pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/playstart")
-async def iidx30pc_playstart(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/playstart")
+async def iidx30pc_playstart(ctx: Ctx):
 
     response = E.response(E.IIDX30pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/playend")
-async def iidx30pc_playend(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/playend")
+async def iidx30pc_playend(ctx: Ctx):
 
     response = E.response(E.IIDX30pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX30pc/delete")
-async def iidx30pc_delete(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/delete")
+async def iidx30pc_delete(ctx: Ctx):
 
     response = E.response(E.IIDX30pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-@router.post("/{gameinfo}/IIDX30pc/logout")
-async def iidx30pc_logout(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX30pc/logout")
+async def iidx30pc_logout(ctx: Ctx):
 
     response = E.response(E.IIDX30pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

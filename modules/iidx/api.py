@@ -1,22 +1,18 @@
-from fastapi import APIRouter, Request, Response, File, UploadFile
-
-from core_common import core_process_request, core_prepare_response, E
-
-from tinydb import Query, where
-from core_database import get_db
-from pydantic import BaseModel
 from typing import Optional
+from os import path
+import json
+import xml.etree.ElementTree as ET
 
-import config
+from pydantic import BaseModel
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.routing import Route, Router
+from tinydb import where
+
 import utils.card as conv
 import utils.musicdata_tool as mdt
-
-import xml.etree.ElementTree as ET
-import json
-from os import path
-
-
-router = APIRouter(prefix="/iidx", tags=["api_iidx"])
+from core_database import get_db
+from modules.webapi import endpoint, read_model
 
 
 class IIDX_Profile_Main_Items(BaseModel):
@@ -81,19 +77,22 @@ class IIDX_Profile_Version_Items(BaseModel):
     dp_rival_6_iidx_id: Optional[int] = 0
 
 
-@router.get("/profiles")
-async def iidx_profiles():
+@endpoint
+async def iidx_profiles(request: Request):
     return get_db().table("iidx_profile").all()
 
 
-@router.get("/profiles/{iidx_id}")
-async def iidx_profile_id(iidx_id: str):
+@endpoint
+async def iidx_profile_id(request: Request):
+    iidx_id = request.path_params["iidx_id"]
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
     return get_db().table("iidx_profile").get(where("iidx_id") == iidx_id)
 
 
-@router.patch("/profiles/{iidx_id}")
-async def iidx_profile_id_patch(iidx_id: str, item: IIDX_Profile_Main_Items):
+@endpoint
+async def iidx_profile_id_patch(request: Request):
+    iidx_id = request.path_params["iidx_id"]
+    item = await read_model(request, IIDX_Profile_Main_Items)
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
     profile = get_db().table("iidx_profile").get(where("iidx_id") == iidx_id)
 
@@ -104,12 +103,13 @@ async def iidx_profile_id_patch(iidx_id: str, item: IIDX_Profile_Main_Items):
     return Response(status_code=204)
 
 
-@router.patch("/profiles/{iidx_id}/{version}")
-async def iidx_profile_id_version_patch(
-    iidx_id: str, version: int, item: IIDX_Profile_Version_Items
-):
+@endpoint
+async def iidx_profile_id_version_patch(request: Request):
+    iidx_id = request.path_params["iidx_id"]
+    version = int(request.path_params["version"])
+    item = await read_model(request, IIDX_Profile_Version_Items)
+
     if version < 30:
-        # TODO: differentiate 18, 19, 20, 29, 30
         return Response(status_code=406)
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
     profile = get_db().table("iidx_profile").get(where("iidx_id") == iidx_id)
@@ -177,8 +177,10 @@ async def iidx_profile_id_version_patch(
     return Response(status_code=204)
 
 
-@router.get("/card/{card}")
-async def iidx_card_to_profile(card: str):
+
+@endpoint
+async def iidx_card_to_profile(request: Request):
+    card = request.path_params["card"]
     card = card.upper()
     lookalike = {
         "I": "1",
@@ -191,66 +193,72 @@ async def iidx_card_to_profile(card: str):
     if card.startswith("E004") or card.startswith("012E"):
         card = "".join([c for c in card if c in "0123456789ABCDEF"])
         uid = card
-        kid = conv.to_konami_id(card)
     else:
         card = "".join([c for c in card if c in conv.valid_characters])
         uid = conv.to_uid(card)
-        kid = card
     profile = get_db().table("iidx_profile").get(where("card") == uid)
     return profile
 
 
-@router.get("/scores")
-async def iidx_scores():
+@endpoint
+async def iidx_scores(request: Request):
     return get_db().table("iidx_scores").all()
 
 
-@router.get("/scores/{iidx_id}")
-async def iidx_scores_id(iidx_id: str):
+@endpoint
+async def iidx_scores_id(request: Request):
+    iidx_id = request.path_params["iidx_id"]
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
     return get_db().table("iidx_scores").search((where("iidx_id") == iidx_id))
 
 
-@router.get("/scores_best")
-async def iidx_scores_best():
+@endpoint
+async def iidx_scores_best(request: Request):
     return get_db().table("iidx_scores_best").all()
 
 
-@router.get("/scores_best/{iidx_id}")
-async def iidx_scores_best_id(iidx_id: str):
+@endpoint
+async def iidx_scores_best_id(request: Request):
+    iidx_id = request.path_params["iidx_id"]
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
     return get_db().table("iidx_scores_best").search((where("iidx_id") == iidx_id))
 
 
-@router.get("/music_id/{music_id}/all")
-async def iidx_scores_id(music_id: int):
+@endpoint
+async def iidx_scores_music_all(request: Request):
+    music_id = int(request.path_params["music_id"])
     return get_db().table("iidx_scores").search((where("music_id") == music_id))
 
 
-@router.get("/music_id/{music_id}/best")
-async def iidx_scores_id_best(music_id: int):
+@endpoint
+async def iidx_scores_music_best(request: Request):
+    music_id = int(request.path_params["music_id"])
     return get_db().table("iidx_scores_best").search((where("music_id") == music_id))
 
 
-@router.get("/class_best/{iidx_id}")
-async def iidx_class_best(iidx_id: str):
+@endpoint
+async def iidx_class_best(request: Request):
+    iidx_id = request.path_params["iidx_id"]
     iidx_id = int("".join([i for i in iidx_id if i.isnumeric()]))
     return get_db().table("iidx_class_best").search((where("iidx_id") == iidx_id))
 
 
-@router.get("/score_stats/all")
-async def iidx_score_stats():
+@endpoint
+async def iidx_score_stats(request: Request):
     return get_db().table("iidx_score_stats").all()
 
 
-@router.get("/score_stats/{music_id}")
-async def iidx_score_stats_song(music_id: int):
+@endpoint
+async def iidx_score_stats_song(request: Request):
+    music_id = int(request.path_params["music_id"])
     return get_db().table("iidx_score_stats").search((where("music_id") == music_id))
 
 
-@router.post("/parse_mdb/upload")
-async def iidx_receive_mdb(file: UploadFile = File(...)) -> bytes:
-    data = await file.read()
+@endpoint
+async def iidx_receive_mdb(request: Request):
+    form = await request.form()
+    upload = form["file"]
+    data = await upload.read()
 
     iidx_bin = path.join("webui", "music_data.bin")
     iidx_vid = path.join("webui", "video_music_list.xml")
@@ -315,3 +323,29 @@ async def iidx_receive_mdb(file: UploadFile = File(...)) -> bytes:
             return Response(status_code=422)
 
     return Response(status_code=406)
+
+
+
+router = Router(
+    routes=[
+        Route("/profiles", iidx_profiles, methods=["GET"]),
+        Route("/profiles/{iidx_id}", iidx_profile_id, methods=["GET"]),
+        Route("/profiles/{iidx_id}", iidx_profile_id_patch, methods=["PATCH"]),
+        Route(
+            "/profiles/{iidx_id}/{version}",
+            iidx_profile_id_version_patch,
+            methods=["PATCH"],
+        ),
+        Route("/card/{card}", iidx_card_to_profile, methods=["GET"]),
+        Route("/scores", iidx_scores, methods=["GET"]),
+        Route("/scores/{iidx_id}", iidx_scores_id, methods=["GET"]),
+        Route("/scores_best", iidx_scores_best, methods=["GET"]),
+        Route("/scores_best/{iidx_id}", iidx_scores_best_id, methods=["GET"]),
+        Route("/music_id/{music_id}/all", iidx_scores_music_all, methods=["GET"]),
+        Route("/music_id/{music_id}/best", iidx_scores_music_best, methods=["GET"]),
+        Route("/class_best/{iidx_id}", iidx_class_best, methods=["GET"]),
+        Route("/score_stats/all", iidx_score_stats, methods=["GET"]),
+        Route("/score_stats/{music_id}", iidx_score_stats_song, methods=["GET"]),
+        Route("/parse_mdb/upload", iidx_receive_mdb, methods=["POST"]),
+    ]
+)

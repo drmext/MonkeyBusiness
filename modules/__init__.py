@@ -1,71 +1,23 @@
-from importlib import util
-from os import path
-from glob import glob
+import importlib
+import pkgutil
 
-from fastapi import APIRouter, Request
-from typing import Optional
+from . import registry  # noqa: F401
 
-routers = []
-for module_path in [
-    f
-    for f in glob(path.join(path.dirname(__file__), "**/*.py"), recursive=True)
-    if path.basename(f) != "__init__.py"
-]:
-    spec = util.spec_from_file_location("", module_path)
-    module = util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+webui_routers = []
 
-    router = getattr(module, "router", None)
-    if router is not None:
-        routers.append(router)
+_SKIP = {"registry", "webapi"}
 
-    if path.basename(module_path) != "api.py":
-        for obj in dir(module):
-            globals()[obj] = module.__dict__[obj]
+for modinfo in pkgutil.walk_packages(__path__, __name__ + "."):
+    short = modinfo.name.rsplit(".", 1)[-1]
+    if short in _SKIP or short.startswith("_"):
+        continue
 
-router = APIRouter(tags=["slashless_forwarder"])
+    module = importlib.import_module(modinfo.name)
 
-
-@router.post("/fwdr")
-async def forward_slashless(
-    request: Request,
-    model: Optional[str] = None,
-    f: Optional[str] = None,
-    module: Optional[str] = None,
-    method: Optional[str] = None,
-):
-    if f != None:
-        module, method = f.split(".")
-
-    try:
-        find_response = globals()[f"{module}_{method}".lower()]
-        return await find_response(request)
-    except KeyError:
-        try:
-            game_code = model.split(":")[0]
-            # TODO: check for more edge cases
-            if game_code == "MDX" and module.startswith("eventlo"):
-                find_response = globals()[f"ddr_{module}_{method}"]
-            elif game_code == "REC":
-                find_response = globals()[f"drs_{module}_{method}"]
-            elif game_code == "KFC":
-                if module == "eventlog":
-                    find_response = globals()[f"sdvx_{module}_{method}"]
-                else:
-                    sdvx_ver = "".join(filter(str.isdigit, method))
-                    find_response = globals()[f"{module}_{"".join([i for i in method if not i.isdigit()])}"]
-                    return await find_response(sdvx_ver, request)
-            elif game_code == "M32":
-                if module == "lobby":
-                    find_response = globals()[f"gitadora_{module}_{method}"]
-                else:
-                    gd_module = module.split("_")
-                    find_response = globals()[f"gitadora_{gd_module[-1]}_{method}"]
-                    return await find_response(gd_module[0], request)
-            return await find_response(request)
-        except (KeyError, UnboundLocalError):
-            print("Try URL Slash 1 (On) if this game is supported.")
-            return Response(status_code=404)
-
-
-routers.append(router)
+    if short == "api":
+        api_router = getattr(module, "router", None)
+        if api_router is not None:
+            pkg = modinfo.name.split(".")[-2]  # modules.ddr.api -> ddr
+            mount = {"ddr": "/ddr", "iidx": "/iidx", "gitadora": "/gfdm"}.get(pkg)
+            if mount:
+                webui_routers.append((mount, api_router))

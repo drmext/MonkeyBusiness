@@ -1,3 +1,4 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import xml.etree.ElementTree as ET
 from os import path
 
@@ -7,24 +8,18 @@ import config
 import random
 import time
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["REC"]
-
+set_xrpc_defaults(service="local", models=["REC"])
 
 def get_profile(cid):
     return get_db().table("dancerush_profile").get(where("card") == cid)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
-
 
 def get_id_from_profile(cid):
     profile = get_db().table("dancerush_profile").get(where("card") == cid)
@@ -34,10 +29,8 @@ def get_id_from_profile(cid):
 
     return profile["drs_id"], djid_split
 
-
-@router.post("/{gameinfo}/game/get_common")
-async def drs_game_get_common(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/get_common")
+async def drs_game_get_common(ctx: Ctx):
 
     songs = {}
 
@@ -190,16 +183,13 @@ async def drs_game_get_common(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/get_playdata_{player}")
+async def drs_game_get_playdata(player: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/get_playdata_{player}")
-async def drs_game_get_playdata(player: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    dataid = request_info["root"][0].find("userid/refid").text
+    dataid = ctx.info["root"][0].find("userid/refid").text
     profile = get_game_profile(dataid, game_version)
 
     if profile:
@@ -247,26 +237,20 @@ async def drs_game_get_playdata(player: str, request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/lock_multi_login_{player}")
-async def drs_game_lock_multi_login(player: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/lock_multi_login_{player}")
+async def drs_game_lock_multi_login(player: str, ctx: Ctx):
 
     response = E.response(E.game())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/sign_up_{player}")
+async def drs_game_sign_up(player: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/sign_up_{player}")
-async def drs_game_sign_up(player: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     dataid = root.find("userid/dataid").text
     cardno = root.find("userid/cardno").text
@@ -295,14 +279,11 @@ async def drs_game_sign_up(player: str, request: Request):
 
     response = E.response(E.game())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/get_musicscore_{player}")
-async def drs_get_musicscore(player: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("game/get_musicscore_{player}")
+async def drs_get_musicscore(player: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     scores = []
     db = get_db()
@@ -341,18 +322,15 @@ async def drs_get_musicscore(player: str, request: Request):
         ),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/save_musicscore")
-async def drs_save_musicscore(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("game/save_musicscore")
+async def drs_save_musicscore(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     timestamp = time.time()
 
-    root = request_info["root"][0][0]
+    root = ctx.info["root"][0][0]
 
     dataid = root.find("userid/refid").text
     profile = get_game_profile(dataid, game_version)
@@ -420,16 +398,13 @@ async def drs_save_musicscore(request: Request):
 
     response = E.response(E.game())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/save_playdata")
+async def drs_save_musicscore(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/save_playdata")
-async def drs_save_musicscore(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0][0]
+    root = ctx.info["root"][0][0]
 
     dataid = root.find("userid/refid").text
 
@@ -478,5 +453,4 @@ async def drs_save_musicscore(request: Request):
 
     response = E.response(E.game())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

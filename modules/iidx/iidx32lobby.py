@@ -1,24 +1,19 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 from time import time
 
 import config
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
-
-router = APIRouter(prefix="/lobby2", tags=["lobby2"])
-router.model_whitelist = ["LDJ"]
-
+from core_common import E
 
 arena_host = {}
 bpl_host = {}
 
+set_xrpc_defaults(service="lobby2", models=["LDJ"])
 
-@router.post("/{gameinfo}/IIDX32lobby/entry")
-async def iidx32lobby_entry(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX32lobby/entry")
+async def iidx32lobby_entry(ctx: Ctx):
 
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
     sp_dp = root.find("play_style").text
     arena_class = root.find("arena_class").text
     ga = root.find("address/ga").text.split()
@@ -60,23 +55,17 @@ async def iidx32lobby_entry(request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX32lobby/update")
-async def iidx32lobby_update(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX32lobby/update")
+async def iidx32lobby_update(ctx: Ctx):
 
     response = E.response(E.IIDX32lobby())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX32lobby/delete")
-async def iidx32lobby_delete(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX32lobby/delete")
+async def iidx32lobby_delete(ctx: Ctx):
 
     # normal reset
     del arena_host["ga"]
@@ -85,15 +74,12 @@ async def iidx32lobby_delete(request: Request):
     del arena_host["time"]
     response = E.response(E.IIDX32lobby())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("IIDX32lobby/bplbattle_entry")
+async def iidx32lobby_bplbattle_entry(ctx: Ctx):
 
-@router.post("/{gameinfo}/IIDX32lobby/bplbattle_entry")
-async def iidx32lobby_bplbattle_entry(request: Request):
-    request_info = await core_process_request(request)
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
     sp_dp = root.find("play_style").text
     arena_class = root.find("arena_class").text
     password = root.find("passward").text  # passward
@@ -137,25 +123,19 @@ async def iidx32lobby_bplbattle_entry(request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX32lobby/bplbattle_update")
-async def iidx32lobby_bplbattle_update(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX32lobby/bplbattle_update")
+async def iidx32lobby_bplbattle_update(ctx: Ctx):
 
     response = E.response(E.IIDX32lobby())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("IIDX32lobby/bplbattle_delete")
+async def iidx32lobby_bplbattle_delete(ctx: Ctx):
 
-@router.post("/{gameinfo}/IIDX32lobby/bplbattle_delete")
-async def iidx32lobby_bplbattle_delete(request: Request):
-    request_info = await core_process_request(request)
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
     ga = root.find("address/ga").text.split()
 
     # normal reset
@@ -165,5 +145,4 @@ async def iidx32lobby_bplbattle_delete(request: Request):
             break
     response = E.response(E.IIDX32lobby())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

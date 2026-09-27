@@ -1,16 +1,12 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service="local2", models=["LDJ"])
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["LDJ"]
-
-
-@router.post("/{gameinfo}/IIDX29shop/getname")
-async def iidx29shop_getname(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX29shop/getname")
+async def iidx29shop_getname(ctx: Ctx):
 
     response = E.response(
         E.IIDX29shop(
@@ -20,13 +16,10 @@ async def iidx29shop_getname(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX29shop/getconvention")
-async def iidx29shop_getconvention(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX29shop/getconvention")
+async def iidx29shop_getconvention(ctx: Ctx):
 
     response = E.response(
         E.IIDX29shop(
@@ -40,25 +33,18 @@ async def iidx29shop_getconvention(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX29shop/sentinfo")
-async def iidx29shop_sentinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX29shop/sentinfo")
+async def iidx29shop_sentinfo(ctx: Ctx):
 
     response = E.response(E.IIDX29shop())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX29shop/sendescapepackageinfo")
-async def iidx29shop_sendescapepackageinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX29shop/sendescapepackageinfo")
+async def iidx29shop_sendescapepackageinfo(ctx: Ctx):
 
     response = E.response(E.IIDX29shop(expire=1200))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

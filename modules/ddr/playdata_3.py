@@ -1,3 +1,4 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import random
 import time
 
@@ -5,27 +6,21 @@ from tinydb import Query, where
 
 import config
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
 from os import path
 import json
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["MDX"]
-
+set_xrpc_defaults(service="local2", models=["MDX"])
 
 def get_profile(cid):
     return get_db().table("ddr_profile").get(where("card") == cid)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
-
 
 mdb = {}
 ddr_metadata = path.join("webui", "ddr.json")
@@ -176,9 +171,8 @@ flares = [
     (800000, 1),
 ]
 
-@router.post("/{gameinfo}/playdata_3/musicdata_load")
-async def playdata_3_musicdata_load(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("playdata_3/musicdata_load")
+async def playdata_3_musicdata_load(ctx: Ctx):
 
     if mdb:
         response = E.response(
@@ -194,7 +188,6 @@ async def playdata_3_musicdata_load(request: Request):
             )
         )
 
-
     else:
         response = E.response(
             E.playdata_3(
@@ -206,15 +199,13 @@ async def playdata_3_musicdata_load(request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-@router.post("/{gameinfo}/playdata_3/playerdata_load")
-async def playdata_3_playerdata_load(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("playdata_3/playerdata_load")
+async def playdata_3_playerdata_load(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     #mode = data.find("mode").text
     #gamesession = data.find("gamesession").text
     refid = data.find("refid").text
@@ -332,15 +323,13 @@ async def playdata_3_playerdata_load(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-@router.post("/{gameinfo}/playdata_3/rivaldata_load")
-async def playdata_3_rivaldata_load(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("playdata_3/rivaldata_load")
+async def playdata_3_rivaldata_load(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     loadflag = int(data.find("loadkind").text)
     country = data.find("country").text
     region = data.find("region").text
@@ -474,16 +463,13 @@ async def playdata_3_rivaldata_load(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("playdata_3/playerdata_new")
+async def playdata_3_playerdata_new(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/playdata_3/playerdata_new")
-async def playdata_3_playerdata_new(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     refid = data.find("refid").text
 
     db = get_db()
@@ -505,7 +491,6 @@ async def playdata_3_playerdata_new(request: Request):
 
     db.table("ddr_profile").upsert(all_profiles_for_card, where("card") == refid)
 
-
     response = E.response(
         E.playdata_3(
             E.result(0, __type="s32"),
@@ -515,17 +500,14 @@ async def playdata_3_playerdata_new(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("playdata_3/playerdata_save")
+async def playdata_3_playerdata_save(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/playdata_3/playerdata_save")
-async def playdata_3_playerdata_save(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    retrycnt = int(request_info["root"][0].find("retrycnt").text)
-    data = request_info["root"][0].find("data")
+    retrycnt = int(ctx.info["root"][0].find("retrycnt").text)
+    data = ctx.info["root"][0].find("data")
 
     refid = data.find("refid").text
     savekind = int(data.find("savekind").text)
@@ -669,16 +651,12 @@ async def playdata_3_playerdata_save(request: Request):
             )
         )
 
+    return response
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+@xrpc("playdata_3/ghostdata_load")
+async def playdata_3_ghostdata_load(ctx: Ctx):
 
-
-@router.post("/{gameinfo}/playdata_3/ghostdata_load")
-async def playdata_3_ghostdata_load(request: Request):
-    request_info = await core_process_request(request)
-
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     ghostid = int(data.find("ghostid").text)
 
     record = get_db().table("ddr_scores").get(doc_id=ghostid)
@@ -691,13 +669,10 @@ async def playdata_3_ghostdata_load(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/playdata_3/mergeddata_load")
-async def playdata_3_mergeddata_load(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("playdata_3/mergeddata_load")
+async def playdata_3_mergeddata_load(ctx: Ctx):
 
     response = E.response(
         E.playdata_3(
@@ -708,5 +683,4 @@ async def playdata_3_mergeddata_load(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

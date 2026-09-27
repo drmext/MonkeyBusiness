@@ -1,16 +1,12 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service="local2", models=["LDJ"])
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["LDJ"]
-
-
-@router.post("/{gameinfo}/IIDX29gameSystem/systemInfo")
-async def iidx29gamesystem_systeminfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX29gameSystem/systemInfo")
+async def iidx29gamesystem_systeminfo(ctx: Ctx):
 
     unlock = ()  # (28008, 28065, 28073, 28088, 28089, 29027, 29094, 29095)
     sp_dp = (0, 1)
@@ -91,5 +87,4 @@ async def iidx29gamesystem_systeminfo(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

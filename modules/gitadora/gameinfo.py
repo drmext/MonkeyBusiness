@@ -1,17 +1,13 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import time
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service=("local", "local2"), models=["M32"])
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
-
-
-@router.post("/{gameinfo}/{ver}_gameinfo/get")
-async def gitadora_gameinfo_get(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("{ver}_gameinfo/get")
+async def gitadora_gameinfo_get(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     response = E.response(
         E(
@@ -237,5 +233,4 @@ async def gitadora_gameinfo_get(ver: str, request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

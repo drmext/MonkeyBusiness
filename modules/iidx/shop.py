@@ -1,16 +1,12 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service="local", models=["LDJ", "KDZ", "JDZ"])
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
-
-
-@router.post("/{gameinfo}/shop/getname")
-async def shop_getname(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("shop/getname")
+async def shop_getname(ctx: Ctx):
 
     response = E.response(
         E.shop(
@@ -20,13 +16,10 @@ async def shop_getname(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/shop/getconvention")
-async def shop_getconvention(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("shop/getconvention")
+async def shop_getconvention(ctx: Ctx):
 
     response = E.response(
         E.shop(
@@ -40,25 +33,18 @@ async def shop_getconvention(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/shop/sentinfo")
-async def shop_sentinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("shop/sentinfo")
+async def shop_sentinfo(ctx: Ctx):
 
     response = E.response(E.shop())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/shop/sendescapepackageinfo")
-async def shop_sendescapepackageinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("shop/sendescapepackageinfo")
+async def shop_sendescapepackageinfo(ctx: Ctx):
 
     response = E.response(E.shop(expire=1200))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

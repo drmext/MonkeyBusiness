@@ -1,19 +1,16 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
 from tinydb import Query, where
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ"]
+set_xrpc_defaults(service="local", models=["LDJ"])
 
-
-@router.post("/{gameinfo}/IIDX33shop/getname")
-async def iidx33shop_getname(request: Request):
-    request_info = await core_process_request(request)
-    pcbid = request_info["root"].attrib["srcid"]
+@xrpc("IIDX33shop/getname")
+async def iidx33shop_getname(ctx: Ctx):
+    pcbid = ctx.info["root"].attrib["srcid"]
 
     op = get_db().table("shop").get(where("pcbid") == pcbid)
     op = {} if op is None else op
@@ -26,15 +23,12 @@ async def iidx33shop_getname(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX33shop/savename")
-async def iidx33shop_savename(request: Request):
-    request_info = await core_process_request(request)
-    pcbid = request_info["root"].attrib["srcid"]
-    opname = request_info["root"][0].attrib["opname"]
+@xrpc("IIDX33shop/savename")
+async def iidx33shop_savename(ctx: Ctx):
+    pcbid = ctx.info["root"].attrib["srcid"]
+    opname = ctx.info["root"][0].attrib["opname"]
 
     shop_info = {
         "pcbid": pcbid,
@@ -45,13 +39,10 @@ async def iidx33shop_savename(request: Request):
 
     response = E.response(E.IIDX33shop())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX33shop/getconvention")
-async def iidx33shop_getconvention(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX33shop/getconvention")
+async def iidx33shop_getconvention(ctx: Ctx):
 
     response = E.response(
         E.IIDX33shop(
@@ -65,32 +56,24 @@ async def iidx33shop_getconvention(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX33shop/sentinfo")
-async def iidx33shop_sentinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX33shop/sentinfo")
+async def iidx33shop_sentinfo(ctx: Ctx):
 
     response = E.response(E.IIDX33shop())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/IIDX33shop/sendescapepackageinfo")
-async def iidx33shop_sendescapepackageinfo(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX33shop/sendescapepackageinfo")
+async def iidx33shop_sendescapepackageinfo(ctx: Ctx):
 
     response = E.response(E.IIDX33shop(expire=1200))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-@router.post("/{gameinfo}/IIDX33shop/getclosingtime")
-async def iidx33shop_getclosingtime(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX33shop/getclosingtime")
+async def iidx33shop_getclosingtime(ctx: Ctx):
 
     response = E.response(
         E.IIDX33shop(
@@ -99,14 +82,11 @@ async def iidx33shop_getclosingtime(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-@router.post("/{gameinfo}/IIDX33shop/saveclosingtime")
-async def iidx33shop_saveclosingtime(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("IIDX33shop/saveclosingtime")
+async def iidx33shop_saveclosingtime(ctx: Ctx):
 
     response = E.response(E.IIDX33shop())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

@@ -1,18 +1,14 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import lxml.etree as ET
 from os import path
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service=("local", "local2"), models=["M32"])
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
-
-
-@router.post("/{gameinfo}/{ver}_playablemusic/get")
-async def gitadora_playablemusic_get(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    spec = request_info["spec"]
+@xrpc("{ver}_playablemusic/get")
+async def gitadora_playablemusic_get(ver: str, ctx: Ctx):
+    spec = ctx.info["spec"]
 
     if spec in ("A", "B"):
         is_delta = False
@@ -135,5 +131,4 @@ async def gitadora_playablemusic_get(ver: str, request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

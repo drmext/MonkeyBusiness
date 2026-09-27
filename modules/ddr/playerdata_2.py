@@ -1,3 +1,4 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import random
 import time
 
@@ -5,26 +6,20 @@ from tinydb import Query, where
 
 import config
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
 from base64 import b64decode, b64encode
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["MDX"]
-
+set_xrpc_defaults(service="local2", models=["MDX"])
 
 def get_profile(cid):
     return get_db().table("ddr_profile").get(where("card") == cid)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
-
 
 def get_common(ddr_id, game_version, idx):
     profile = get_db().table("ddr_profile").get(where("ddr_id") == int(ddr_id))
@@ -33,15 +28,13 @@ def get_common(ddr_id, game_version, idx):
     else:
         return 0
 
-
-@router.post("/{gameinfo}/playerdata_2/usergamedata_advanced")
-async def playerdata_2_usergamedata_advanced(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-    is_omni = True if request_info["rev"] == "O" else False
+@xrpc("playerdata_2/usergamedata_advanced")
+async def playerdata_2_usergamedata_advanced(ctx: Ctx):
+    game_version = ctx.info["game_version"]
+    is_omni = True if ctx.info["rev"] == "O" else False
     response = None
 
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     mode = data.find("mode").text
     gamesession = data.find("gamesession").text
     refid = data.find("refid").text
@@ -615,16 +608,13 @@ async def playerdata_2_usergamedata_advanced(request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("playerdata_2/usergamedata_recv")
+async def playerdata_2_usergamedata_recv(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/playerdata_2/usergamedata_recv")
-async def playerdata_2_usergamedata_recv(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     cid = data.find("refid").text
     profile = get_game_profile(cid, game_version)
 
@@ -725,16 +715,13 @@ async def playerdata_2_usergamedata_recv(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("playerdata_2/usergamedata_send")
+async def playerdata_2_usergamedata_send(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/playerdata_2/usergamedata_send")
-async def playerdata_2_usergamedata_send(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    data = request_info["root"][0].find("data")
+    data = ctx.info["root"][0].find("data")
     cid = data.find("refid").text
     num = int(data.find("datanum").text)
 
@@ -773,5 +760,4 @@ async def playerdata_2_usergamedata_send(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

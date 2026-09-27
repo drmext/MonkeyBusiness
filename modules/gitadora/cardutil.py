@@ -1,32 +1,26 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 from tinydb import Query, where
 
 import random
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
-
+set_xrpc_defaults(service=("local", "local2"), models=["M32"])
 
 def get_profile(cid):
     return get_db().table("gitadora_profile").get(where("card") == cid)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
 
+@xrpc("{ver}_cardutil/check")
+async def gitadora_cardutil_check(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/{ver}_cardutil/check")
-async def gitadora_cardutil_check(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    data = request_info["root"][0].find("player")
+    data = ctx.info["root"][0].find("player")
 
     no = int(data.attrib["no"])
 
@@ -62,17 +56,14 @@ async def gitadora_cardutil_check(ver: str, request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("{ver}_cardutil/regist")
+async def gitadora_cardutil_regist(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
+    spec = ctx.info["spec"]
 
-@router.post("/{gameinfo}/{ver}_cardutil/regist")
-async def gitadora_cardutil_regist(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-    spec = request_info["spec"]
-
-    data = request_info["root"][0].find("player")
+    data = ctx.info["root"][0].find("player")
 
     no = int(data.attrib["no"])
 
@@ -260,5 +251,4 @@ async def gitadora_cardutil_regist(ver: str, request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

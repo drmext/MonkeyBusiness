@@ -24,8 +24,4 @@ Run [start.bat (Windows)](start.bat) or [start.sh (Linux, MacOS)](start.sh)
 
 - DRS, GD, NOST, and SDVX require mdb xml files copied to the server folder
 
-- **URL Slash 1 (On)** [may still be required in rare cases](modules/__init__.py#L46)
-
-- **URL Slash 0 (Off)** may be required in other cases
-
 - When initially creating a DDR profile, complete an entire credit without pfree hacks

@@ -11,10 +11,10 @@ if not exist .venv\Scripts\activate.bat (
     py -m venv .venv
     .venv\Scripts\activate.bat
     py -m pip install -r requirements.txt
-    py pyeamu.py
+    py main.py
 ) else (
     .venv\Scripts\activate.bat
-    py pyeamu.py
+    py main.py
 )
 
 goto :EOF

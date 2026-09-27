@@ -1,17 +1,14 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
 from time import time
 
-from fastapi import APIRouter, Request, Response
+from core_common import E
 
-from core_common import core_process_request, core_prepare_response, E
+set_xrpc_defaults(service="pcbtracker")
 
-router = APIRouter(prefix="/core", tags=["pcbtracker"])
-
-
-@router.post("/{gameinfo}/pcbtracker/alive")
-async def pcbtracker_alive(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("pcbtracker/alive")
+async def pcbtracker_alive(ctx: Ctx):
 
     response = E.response(
         E.pcbtracker(
@@ -24,5 +21,4 @@ async def pcbtracker_alive(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

@@ -1,23 +1,19 @@
-from fastapi import APIRouter, Request, Response, File, UploadFile
-
-from core_common import core_process_request, core_prepare_response, E
-
-from tinydb import Query, where
-from core_database import get_db
-from pydantic import BaseModel
-
-import config
-import utils.card as conv
-from utils.lz77 import lz77_decode
-
-import lxml.etree as ET
-import json
-import struct
 from typing import Optional, Dict, List, Tuple
 from os import path
+import json
+import struct
 
+import lxml.etree as ET
+from pydantic import BaseModel
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.routing import Route, Router
+from tinydb import where
 
-router = APIRouter(prefix="/ddr", tags=["api_ddr"])
+import utils.card as conv
+from core_database import get_db
+from modules.webapi import endpoint, read_model
+from utils.lz77 import lz77_decode
 
 
 class DDR_Profile_Main_Items(BaseModel):
@@ -54,19 +50,23 @@ class DDR_Profile_20_Items(BaseModel):
     rival_3_ddr_id: Optional[int]
     customize: Optional[dict]
 
-@router.get("/profiles")
-async def ddr_profiles():
+
+@endpoint
+async def ddr_profiles(request: Request):
     return get_db().table("ddr_profile").all()
 
 
-@router.get("/profiles/{ddr_id}")
-async def ddr_profile_id(ddr_id: str):
+@endpoint
+async def ddr_profile_id(request: Request):
+    ddr_id = request.path_params["ddr_id"]
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     return get_db().table("ddr_profile").get(where("ddr_id") == ddr_id)
 
 
-@router.patch("/profiles/{ddr_id}")
-async def ddr_profile_id_patch(ddr_id: str, item: DDR_Profile_Main_Items):
+@endpoint
+async def ddr_profile_id_patch(request: Request):
+    ddr_id = request.path_params["ddr_id"]
+    item = await read_model(request, DDR_Profile_Main_Items)
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     profile = get_db().table("ddr_profile").get(where("ddr_id") == ddr_id)
 
@@ -77,8 +77,10 @@ async def ddr_profile_id_patch(ddr_id: str, item: DDR_Profile_Main_Items):
     return Response(status_code=204)
 
 
-@router.patch("/profiles/{ddr_id}/19")
-async def ddr_profile_id_19_patch(ddr_id: str, item: DDR_Profile_19_Items):
+@endpoint
+async def ddr_profile_id_19_patch(request: Request):
+    ddr_id = request.path_params["ddr_id"]
+    item = await read_model(request, DDR_Profile_19_Items)
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     profile = get_db().table("ddr_profile").get(where("ddr_id") == ddr_id)
     game_profile = profile["version"].get("19", {})
@@ -104,8 +106,10 @@ async def ddr_profile_id_19_patch(ddr_id: str, item: DDR_Profile_19_Items):
     return Response(status_code=204)
 
 
-@router.patch("/profiles/{ddr_id}/20")
-async def ddr_profile_id_20_patch(ddr_id: str, item: DDR_Profile_20_Items):
+@endpoint
+async def ddr_profile_id_20_patch(request: Request):
+    ddr_id = request.path_params["ddr_id"]
+    item = await read_model(request, DDR_Profile_20_Items)
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     profile = get_db().table("ddr_profile").get(where("ddr_id") == ddr_id)
     game_profile = profile["version"].get("20", {})
@@ -123,8 +127,9 @@ async def ddr_profile_id_20_patch(ddr_id: str, item: DDR_Profile_20_Items):
     return Response(status_code=204)
 
 
-@router.get("/card/{card}")
-async def ddr_card_to_profile(card: str):
+@endpoint
+async def ddr_card_to_profile(request: Request):
+    card = request.path_params["card"]
     card = card.upper()
     lookalike = {
         "I": "1",
@@ -137,44 +142,46 @@ async def ddr_card_to_profile(card: str):
     if card.startswith("E004") or card.startswith("012E"):
         card = "".join([c for c in card if c in "0123456789ABCDEF"])
         uid = card
-        kid = conv.to_konami_id(card)
     else:
         card = "".join([c for c in card if c in conv.valid_characters])
         uid = conv.to_uid(card)
-        kid = card
     profile = get_db().table("ddr_profile").get(where("card") == uid)
     return profile
 
 
-@router.get("/scores")
-async def ddr_scores():
+@endpoint
+async def ddr_scores(request: Request):
     return get_db().table("ddr_scores").all()
 
 
-@router.get("/scores/{ddr_id}")
-async def ddr_scores_id(ddr_id: str):
+@endpoint
+async def ddr_scores_id(request: Request):
+    ddr_id = request.path_params["ddr_id"]
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     return get_db().table("ddr_scores").search((where("ddr_id") == ddr_id))
 
 
-@router.get("/scores_best")
-async def ddr_scores_best():
+@endpoint
+async def ddr_scores_best(request: Request):
     return get_db().table("ddr_scores_best").all()
 
 
-@router.get("/scores_best/{ddr_id}")
-async def ddr_scores_best_id(ddr_id: str):
+@endpoint
+async def ddr_scores_best_id(request: Request):
+    ddr_id = request.path_params["ddr_id"]
     ddr_id = int("".join([i for i in ddr_id if i.isnumeric()]))
     return get_db().table("ddr_scores_best").search((where("ddr_id") == ddr_id))
 
 
-@router.get("/mcode/{mcode}/all")
-async def ddr_scores_id(mcode: int):
+@endpoint
+async def ddr_scores_mcode_all(request: Request):
+    mcode = int(request.path_params["mcode"])
     return get_db().table("ddr_scores").search((where("mcode") == mcode))
 
 
-@router.get("/mcode/{mcode}/best")
-async def ddr_scores_id_best(mcode: int):
+@endpoint
+async def ddr_scores_mcode_best(request: Request):
+    mcode = int(request.path_params["mcode"])
     return get_db().table("ddr_scores_best").search((where("mcode") == mcode))
 
 
@@ -232,9 +239,11 @@ class ARC:
             )
 
 
-@router.post("/parse_mdb/upload")
-async def ddr_receive_mdb(file: UploadFile = File(...)) -> bytes:
-    data = await file.read()
+@endpoint
+async def ddr_receive_mdb(request: Request):
+    form = await request.form()
+    upload = form["file"]
+    data = await upload.read()
     arc = ARC(data)
     try:
         mdb_new = ET.fromstring(
@@ -287,3 +296,22 @@ async def ddr_receive_mdb(file: UploadFile = File(...)) -> bytes:
         json.dump(mdb, fp, indent=4, ensure_ascii=False)
 
     return Response(status_code=201)
+
+
+router = Router(
+    routes=[
+        Route("/profiles", ddr_profiles, methods=["GET"]),
+        Route("/profiles/{ddr_id}", ddr_profile_id, methods=["GET"]),
+        Route("/profiles/{ddr_id}", ddr_profile_id_patch, methods=["PATCH"]),
+        Route("/profiles/{ddr_id}/19", ddr_profile_id_19_patch, methods=["PATCH"]),
+        Route("/profiles/{ddr_id}/20", ddr_profile_id_20_patch, methods=["PATCH"]),
+        Route("/card/{card}", ddr_card_to_profile, methods=["GET"]),
+        Route("/scores", ddr_scores, methods=["GET"]),
+        Route("/scores/{ddr_id}", ddr_scores_id, methods=["GET"]),
+        Route("/scores_best", ddr_scores_best, methods=["GET"]),
+        Route("/scores_best/{ddr_id}", ddr_scores_best_id, methods=["GET"]),
+        Route("/mcode/{mcode}/all", ddr_scores_mcode_all, methods=["GET"]),
+        Route("/mcode/{mcode}/best", ddr_scores_mcode_best, methods=["GET"]),
+        Route("/parse_mdb/upload", ddr_receive_mdb, methods=["POST"]),
+    ]
+)

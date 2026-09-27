@@ -1,10 +1,11 @@
 import config
 
+import re
 import threading
 import time
+from functools import partial
 
-from fastapi import HTTPException
-from lxml.builder import ElementMaker
+from lxml.etree import Element, iselement, tostring
 
 from kbinxml import KBinXML
 
@@ -14,30 +15,133 @@ from utils.lz77 import lz77_decode, lz77_encode
 # Skip LZ77 for tiny bodies that always expand under AVS framing overhead.
 LZ77_MIN_RAW_BYTES = 256
 
+# XML declaration charset aliases -> kbinxml / binary codec name (xrpc-go EncodingByName).
+_ENCODING_ALIASES = {
+    "UTF-8": "UTF-8",
+    "UTF8": "UTF-8",
+    "SHIFT_JIS": "cp932",
+    "SHIFT-JIS": "cp932",
+    "SJIS": "cp932",
+    "CP932": "cp932",
+    "EUC-JP": "EUC_JP",
+    "EUC_JP": "EUC_JP",
+    "EUCJP": "EUC_JP",
+    "ISO-8859-1": "ISO-8859-1",
+    "ISO_8859-1": "ISO-8859-1",
+    "ASCII": "ASCII",
+}
 
-def _add_val_as_str(elm, val):
-    new_val = str(val)
+# kbinxml codec -> AVS XML declaration / lxml tostring encoding name.
+_XML_DECL_NAMES = {
+    "UTF-8": "UTF-8",
+    "cp932": "SHIFT_JIS",
+    "EUC_JP": "EUC-JP",
+    "ISO-8859-1": "ISO-8859-1",
+    "ASCII": "ASCII",
+}
 
-    if elm is not None:
-        elm.text = new_val
-
-    else:
-        return new_val
+_XML_DECL_ENCODING_RE = re.compile(
+    br"""encoding\s*=\s*["']([^"']+)["']""", re.IGNORECASE
+)
 
 
-def _add_bool_as_str(elm, val):
-    return _add_val_as_str(elm, 1 if val else 0)
+class EamuseError(Exception):
+    """Bad e-amuse request; caught by the bare ASGI app and turned into an HTTP status."""
+
+    __slots__ = ("status_code", "detail")
+
+    def __init__(self, status_code: int = 400, detail: str | bytes = ""):
+        self.status_code = status_code
+        self.detail = detail
+        super().__init__(detail if detail else status_code)
 
 
-def _add_list_as_str(elm, vals):
-    new_val = " ".join([str(val) for val in vals])
+def _normalize_xml_encoding(name: str | None) -> str:
+    """Map a declaration / alias to a kbinxml codec name; default UTF-8."""
+    if not name:
+        return "UTF-8"
+    return _ENCODING_ALIASES.get(name.upper().replace(" ", ""), "UTF-8")
 
-    if elm is not None:
-        elm.text = new_val
-        elm.attrib["__count"] = str(len(vals))
 
-    else:
-        return new_val
+def _xml_decl_name(codec: str) -> str:
+    """AVS / lxml declaration name for a kbinxml codec."""
+    return _XML_DECL_NAMES.get(codec, "UTF-8")
+
+
+def _detect_text_xml_encoding(data: bytes) -> str:
+    """Read charset from <?xml ... encoding=...?>; default UTF-8."""
+    head = data[:200]
+    m = _XML_DECL_ENCODING_RE.search(head)
+    if not m:
+        return "UTF-8"
+    try:
+        return _normalize_xml_encoding(m.group(1).decode("ascii", errors="ignore"))
+    except Exception:
+        return "UTF-8"
+
+
+def _attr_str(val):
+    """Convert a keyword argument to an XML attribute string."""
+    t = type(val)
+    if t is str:
+        return val
+    if t is bool:
+        return "1" if val else "0"
+    if t is int or t is float:
+        return str(val)
+    if t is list:
+        return " ".join(str(v) for v in val)
+    raise TypeError(f"bad attribute type: {t.__name__}({val!r})")
+
+
+class _ElementFactory:
+    """Drop-in replacement for lxml.builder.ElementMaker with our typemap.
+
+    Supports ``E.tag(...)`` and ``E("tag", ...)``. Hot tags are cached on the
+    instance after the first ``__getattr__`` so loops do not allocate a fresh
+    ``partial`` on every access.
+    """
+
+    __slots__ = ("__dict__",)
+
+    def __call__(self, tag, *children, **attrib):
+        elem = Element(tag)
+        if attrib:
+            for k, v in attrib.items():
+                elem.attrib[k] = _attr_str(v)
+
+        for item in children:
+            t = type(item)
+            if t is str:
+                try:
+                    last = elem[-1]
+                except IndexError:
+                    elem.text = (elem.text or "") + item
+                else:
+                    last.tail = (last.tail or "") + item
+            elif t is bool:
+                elem.text = "1" if item else "0"
+            elif t is int or t is float:
+                elem.text = str(item)
+            elif t is list:
+                elem.text = " ".join(str(v) for v in item)
+                elem.attrib["__count"] = str(len(item))
+            elif iselement(item):
+                elem.append(item)
+            else:
+                raise TypeError(f"bad argument type: {t.__name__}({item!r})")
+
+        return elem
+
+    def __getattr__(self, tag):
+        if tag.startswith("_"):
+            raise AttributeError(tag)
+        fn = partial(self, tag)
+        setattr(self, tag, fn)
+        return fn
+
+
+E = _ElementFactory()
 
 
 _AVS_DEFAULT_SEED = 0x41C64E6D
@@ -75,110 +179,88 @@ def avs_prng_uint16():
 
 
 def _parse_eamuse_info(header):
-    """Return (unix_bytes, prng_bytes) or raise HTTPException(400)."""
+    """Return (unix_bytes, prng_bytes) or raise EamuseError(400)."""
     parts = header.split("-")
     if len(parts) != 3 or parts[0] != "1":
-        raise HTTPException(status_code=400, detail="malformed X-Eamuse-Info")
+        raise EamuseError(400, "malformed X-Eamuse-Info")
     unix_hex, prng_hex = parts[1], parts[2]
     if len(unix_hex) != 8 or len(prng_hex) != 4:
-        raise HTTPException(status_code=400, detail="malformed X-Eamuse-Info")
+        raise EamuseError(400, "malformed X-Eamuse-Info")
     try:
         return bytes.fromhex(unix_hex), bytes.fromhex(prng_hex)
     except ValueError:
-        raise HTTPException(status_code=400, detail="malformed X-Eamuse-Info") from None
+        raise EamuseError(400, "malformed X-Eamuse-Info") from None
 
 
-E = ElementMaker(
-    typemap={
-        int: _add_val_as_str,
-        bool: _add_bool_as_str,
-        list: _add_list_as_str,
-        float: _add_val_as_str,
-    }
+# (min_ext, version) newest-first; first match with ext >= min_ext wins.
+_LDJ_VERSIONS = (
+    (2025091700, 33),
+    (2024100900, 32),
+    (2023101800, 31),
+    (2022101700, 30),
+    (2021101300, 29),
+    # TODO: Consolidate IIDX modules to easily support versions 21-28 (probably never)
+    (2020102800, 28),
+    (2019101600, 27),
+    (2018110700, 26),
+    (2017122100, 25),
+    (2016102400, 24),
+    (2015111100, 23),
+    (2014091700, 22),
+    (2013100200, 21),
+    (2012010100, 20),
+)
+
+_M32_VERSIONS = (
+    (2024031300, 10),
+    (2022121400, 9),
+    (2021042100, 8),
+    (2019100200, 7),
+    (2018072700, 6),
+    # TODO: Support versions 1-5 (never)
+    (2017090600, 5),
+    (2017011800, 4),
+    (2015042100, 3),
+    (2014021400, 2),
+    (2013012400, 1),
 )
 
 
-async def core_get_game_version_from_software_version(software_version):
+def _version_from_thresholds(ext, thresholds):
+    for min_ext, ver in thresholds:
+        if ext >= min_ext:
+            return ver
+    return 0
+
+
+def core_get_game_version_from_software_version(software_version):
     _, model, dest, spec, rev, ext = software_version
     ext = int(ext)
 
     if model == "LDJ":
-        if ext >= 2025091700:
-            return 33
-        elif ext >= 2024100900:
-            return 32
-        elif ext >= 2023101800:
-            return 31
-        elif ext >= 2022101700:
-            return 30
-        elif ext >= 2021101300:
-            return 29
-        # TODO: Consolidate IIDX modules to easily support versions 21-28 (probably never)
-        elif ext >= 2020102800:
-            return 28
-        elif ext >= 2019101600:
-            return 27
-        elif ext >= 2018110700:
-            return 26
-        elif ext >= 2017122100:
-            return 25
-        elif ext >= 2016102400:
-            return 24
-        elif ext >= 2015111100:
-            return 23
-        elif ext >= 2014091700:
-            return 22
-        elif ext >= 2013100200:
-            return 21
-        elif ext >= 2012010100:
-            return 20
-    elif model == "KDZ":
+        return _version_from_thresholds(ext, _LDJ_VERSIONS)
+    if model == "KDZ":
         return 19
-    elif model == "JDZ":
+    if model == "JDZ":
         return 18
-
-    elif model == "M32":
-        if ext >= 2024031300:
-            return 10
-        elif ext >= 2022121400:
-            return 9
-        elif ext >= 2021042100:
-            return 8
-        elif ext >= 2019100200:
-            return 7
-        elif ext >= 2018072700:
-            return 6
-        # TODO: Support versions 1-5 (never)
-        elif ext >= 2017090600:
-            return 5
-        elif ext >= 2017011800:
-            return 4
-        elif ext >= 2015042100:
-            return 3
-        elif ext >= 2014021400:
-            return 2
-        elif ext >= 2013012400:
-            return 1
-
-    elif model == "MDX":
-        if ext >= 2024061200 and ext not in (2024042069, 2025042069): # GF
+    if model == "M32":
+        return _version_from_thresholds(ext, _M32_VERSIONS)
+    if model == "MDX":
+        if ext >= 2024061200 and ext not in (2024042069, 2025042069):  # GF
             return 20
         if ext >= 2019022600:  # ???
             return 19
-
-    elif model == "KFC":
+        return 0
+    if model == "KFC":
         if ext >= 2020090402:  # ???
             return 6
-
-    elif model == "REC":
-        return 1
-
-    # TODO: ???
-    # elif model == "PAN":
-    #     return 0
-
-    else:
         return 0
+    if model == "REC":
+        return 1
+    # TODO: ???
+    # if model == "PAN":
+    #     return 0
+    return 0
 
 
 async def core_process_request(request):
@@ -186,11 +268,11 @@ async def core_process_request(request):
     data = await request.body()
 
     if not cl or not data:
-        raise HTTPException(status_code=400)
+        raise EamuseError(400)
 
     request.compress = request.headers.get("X-Compress", "none") # intentionally lowercase 'none' (NOT None)
     if request.compress not in ("none", "lz77"):
-        raise HTTPException(status_code=400, detail="unsupported X-Compress value")
+        raise EamuseError(400, "unsupported X-Compress value")
 
     if "X-Eamuse-Info" in request.headers:
         unix_bytes, prng_bytes = _parse_eamuse_info(request.headers.get("X-Eamuse-Info"))
@@ -203,9 +285,14 @@ async def core_process_request(request):
     if request.compress == "lz77":
         xml_dec = lz77_decode(xml_dec)
 
+    # Signature byte distinguishes binary; KBinXML.__init__ peeks the same way once.
+    request.is_binxml = bool(xml_dec) and xml_dec[0] == 0xA0
     xml = KBinXML(xml_dec, convert_illegal_things=True)
     root = xml.xml_doc
-    request.is_binxml = KBinXML.is_binary_xml(xml_dec)
+    if request.is_binxml:
+        request.xml_encoding = _normalize_xml_encoding(xml.encoding)
+    else:
+        request.xml_encoding = _detect_text_xml_encoding(xml_dec)
 
     xml_text = None
     if config.verbose_log:
@@ -217,13 +304,17 @@ async def core_process_request(request):
         print("\033[94mREQUEST\033[0m:")
         print(f"X-Eamuse-Info: {eamuse_info}")
         print(f"X-Compress: {request.compress}")
+        print(
+            f"Encoding: {_xml_decl_name(request.xml_encoding)}"
+            f" ({'binary' if request.is_binxml else 'text'})"
+        )
         print(xml_text)
 
     model_parts = (root.attrib["model"], *root.attrib["model"].split(":"))
     module = root[0].tag
     method = root[0].attrib["method"] if "method" in root[0].attrib else None
     command = root[0].attrib["command"] if "command" in root[0].attrib else None
-    game_version = await core_get_game_version_from_software_version(model_parts)
+    game_version = core_get_game_version_from_software_version(model_parts)
 
     return {
         "root": root,
@@ -240,13 +331,20 @@ async def core_process_request(request):
     }
 
 
-async def core_prepare_response(request, xml):
+def core_prepare_response(request, xml):
+    enc = getattr(request, "xml_encoding", None) or "UTF-8"
     binxml = KBinXML(xml)
 
     if request.is_binxml:
-        xml_binary = binxml.to_binary()
+        xml_binary = binxml.to_binary(encoding=enc)
     else:
-        xml_binary = binxml.to_text().encode("utf-8")  # TODO: Proper encoding
+        # Compact on the wire; verbose_log pretty-prints separately via to_text().
+        xml_binary = tostring(
+            binxml.xml_doc,
+            encoding=_xml_decl_name(enc),
+            xml_declaration=True,
+            pretty_print=False,
+        )
 
     response_headers = {"User-Agent": "EAMUSE.Httpac/1.0"}
 
@@ -279,6 +377,10 @@ async def core_prepare_response(request, xml):
         print("\033[91mRESPONSE\033[0m:")
         print(f"X-Eamuse-Info: {response_headers.get('X-Eamuse-Info', 'none')}")
         print(f"X-Compress: {response_headers['X-Compress']}")
+        print(
+            f"Encoding: {_xml_decl_name(enc)}"
+            f" ({'binary' if request.is_binxml else 'text'})"
+        )
         print(binxml.to_text())
 
     return response, response_headers

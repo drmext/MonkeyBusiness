@@ -1,25 +1,19 @@
-from fastapi import APIRouter, Request, Response
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 
-router = APIRouter(prefix="/core", tags=["dlstatus"])
+set_xrpc_defaults(service="dlstatus")
 
-
-@router.post("/{gameinfo}/dlstatus/done")
-async def dlstatus_done(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("dlstatus/done")
+async def dlstatus_done(ctx: Ctx):
 
     response = E.response(E.dlstatus(status=0))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/dlstatus/progress")
-async def dlstatus_progress(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("dlstatus/progress")
+async def dlstatus_progress(ctx: Ctx):
 
     response = E.response(E.dlstatus(status=0))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

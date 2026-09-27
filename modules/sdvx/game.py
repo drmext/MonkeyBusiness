@@ -1,3 +1,4 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import xml.etree.ElementTree as ET
 from os import path
 
@@ -7,24 +8,18 @@ import config
 import random
 import time
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local2", tags=["local2"])
-router.model_whitelist = ["KFC"]
-
+set_xrpc_defaults(service=("local", "local2"), models=["KFC"])
 
 def get_profile(cid):
     return get_db().table("sdvx_profile").get(where("card") == cid)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
-
 
 def get_id_from_profile(cid):
     profile = get_db().table("sdvx_profile").get(where("card") == cid)
@@ -34,10 +29,8 @@ def get_id_from_profile(cid):
 
     return profile["sdvx_id"], djid_split
 
-
-@router.post("/{gameinfo}/game/sv{ver}_common")
-async def game_sv_common(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_common")
+async def game_sv_common(ver: str, ctx: Ctx):
 
     event = [
         "DEMOGAME_PLAY",
@@ -132,7 +125,6 @@ async def game_sv_common(ver: str, request: Request):
             for j in range(0, 5):
                 unlock.append([i, j])
 
-
     response = E.response(
         E.game(
             E.event(
@@ -156,16 +148,13 @@ async def game_sv_common(ver: str, request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/sv{ver}_new")
+async def game_sv_new(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/sv{ver}_new")
-async def game_sv_new(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     dataid = root.find("dataid").text
     cardno = root.find("cardno").text
@@ -229,16 +218,13 @@ async def game_sv_new(ver: str, request: Request):
         ),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/sv{ver}_load")
+async def game_sv_load(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/sv{ver}_load")
-async def game_sv_load(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    dataid = request_info["root"][0].find("dataid").text
+    dataid = ctx.info["root"][0].find("dataid").text
     profile = get_game_profile(dataid, game_version)
 
     if profile:
@@ -397,16 +383,13 @@ async def game_sv_load(ver: str, request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/sv{ver}_load_m")
+async def game_sv_load_m(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/sv{ver}_load_m")
-async def game_sv_load_m(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    dataid = request_info["root"][0].find("refid").text
+    dataid = ctx.info["root"][0].find("refid").text
     profile = get_game_profile(dataid, game_version)
     djid, djid_split = get_id_from_profile(dataid)
 
@@ -457,21 +440,18 @@ async def game_sv_load_m(ver: str, request: Request):
         ),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("game/sv{ver}_save")
+async def game_sv_save(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/game/sv{ver}_save")
-async def game_sv_save(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    dataid = request_info["root"][0].find("refid").text
+    dataid = ctx.info["root"][0].find("refid").text
 
     profile = get_profile(dataid)
     game_profile = profile["version"].get(str(game_version), {})
 
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     game_profile["appeal_id"] = int(root.find("appeal_id").text)
 
@@ -588,18 +568,15 @@ async def game_sv_save(ver: str, request: Request):
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_save_m")
-async def game_sv_save_m(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("game/sv{ver}_save_m")
+async def game_sv_save_m(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     timestamp = time.time()
 
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     dataid = root.find("dataid").text
     profile = get_game_profile(dataid, game_version)
@@ -699,14 +676,11 @@ async def game_sv_save_m(ver: str, request: Request):
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_hiscore")
-async def game_sv_hiscore(ver: str, request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("game/sv{ver}_hiscore")
+async def game_sv_hiscore(ver: str, ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     best_scores = []
     db = get_db()
@@ -743,137 +717,103 @@ async def game_sv_hiscore(ver: str, request: Request):
         ),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_lounge")
-async def game_sv_lounge(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_lounge")
+async def game_sv_lounge(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(E.interval(30, __type="u32")),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_shop")
-async def game_sv_shop(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_shop")
+async def game_sv_shop(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(E.nxt_time(1000 * 5 * 60, __type="u32")),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_load_r")
-async def game_sv_load_r(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_load_r")
+async def game_sv_load_r(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_frozen")
-async def game_sv_frozen(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_frozen")
+async def game_sv_frozen(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_save_e")
-async def game_sv_save_e(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_save_e")
+async def game_sv_save_e(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_save_mega")
-async def game_sv_save_mega(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_save_mega")
+async def game_sv_save_mega(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_play_e")
-async def game_sv_play_e(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_play_e")
+async def game_sv_play_e(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_play_s")
-async def game_sv_play_s(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_play_s")
+async def game_sv_play_s(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_entry_s")
-async def game_sv_entry_s(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_entry_s")
+async def game_sv_entry_s(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_entry_e")
-async def game_sv_entry_e(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_entry_e")
+async def game_sv_entry_e(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/game/sv{ver}_log")
-async def game_sv_log(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("game/sv{ver}_log")
+async def game_sv_log(ver: str, ctx: Ctx):
 
     response = E.response(
         E.game(),
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

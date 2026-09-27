@@ -16,4 +16,4 @@ fi
 
 source .venv/bin/activate
 $py -m pip install -r requirements.txt
-$py pyeamu.py
+$py main.py

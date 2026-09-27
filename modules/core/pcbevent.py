@@ -1,15 +1,12 @@
-from fastapi import APIRouter, Request, Response
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 
-router = APIRouter(prefix="/core", tags=["pcbevent"])
+set_xrpc_defaults(service="pcbevent")
 
-
-@router.post("/{gameinfo}/pcbevent/put")
-async def pcbevent_put(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("pcbevent/put")
+async def pcbevent_put(ctx: Ctx):
 
     response = E.response(E.pcbevent(expire=600))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

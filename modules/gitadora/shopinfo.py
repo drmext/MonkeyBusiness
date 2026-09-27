@@ -1,14 +1,11 @@
-from fastapi import APIRouter, Request, Response
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["M32"]
+set_xrpc_defaults(service=("local", "local2"), models=["M32"])
 
-
-@router.post("/{gameinfo}/{ver}_shopinfo/regist")
-async def gitadora_shopinfo_regist(ver: str, request: Request):
-    request_info = await core_process_request(request)
+@xrpc("{ver}_shopinfo/regist")
+async def gitadora_shopinfo_regist(ver: str, ctx: Ctx):
 
     response = E.response(
         E(
@@ -27,5 +24,4 @@ async def gitadora_shopinfo_regist(ver: str, request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

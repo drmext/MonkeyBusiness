@@ -1,30 +1,24 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 from tinydb import Query, where
 
 import config
 import random
 
-from fastapi import APIRouter, Request, Response
-
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
-
+set_xrpc_defaults(service="local", models=["LDJ", "KDZ", "JDZ"])
 
 def get_profile(cid):
     return get_db().table("iidx_profile").get(where("card") == cid)
 
-
 def get_profile_by_id(iidx_id):
     return get_db().table("iidx_profile").get(where("iidx_id") == iidx_id)
-
 
 def get_game_profile(cid, game_version):
     profile = get_profile(cid)
 
     return profile["version"].get(str(game_version), None)
-
 
 def get_id_from_profile(cid):
     profile = get_db().table("iidx_profile").get(where("card") == cid)
@@ -33,7 +27,6 @@ def get_id_from_profile(cid):
     djid_split = "-".join([djid[:4], djid[4:]])
 
     return profile["iidx_id"], djid_split
-
 
 def calculate_folder_mask(profile):
     return (
@@ -48,13 +41,11 @@ def calculate_folder_mask(profile):
         | (profile.get("_hide_rival_info", 0) << 9)
     )
 
+@xrpc("pc/get")
+async def pc_get(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/pc/get")
-async def pc_get(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    cid = request_info["root"][0].attrib["rid"]
+    cid = ctx.info["root"][0].attrib["rid"]
     profile = get_game_profile(cid, game_version)
     djid, djid_split = get_id_from_profile(cid)
 
@@ -440,14 +431,11 @@ async def pc_get(request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/pc/common")
-async def pc_common(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("pc/common")
+async def pc_common(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     if game_version == 20:
         response = E.response(
@@ -526,16 +514,13 @@ async def pc_common(request: Request):
             )
         )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("pc/save")
+async def pc_save(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/pc/save")
-async def pc_save(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     xid = int(root.attrib["iidxid"])
     clt = int(root.attrib["cltype"])
@@ -616,7 +601,7 @@ async def pc_save(request: Request):
                 int(x) for x in trophy.text.split(" ")
             ]
 
-    grade = request_info["root"][0].find("grade")
+    grade = ctx.info["root"][0].find("grade")
     if grade is not None:
         grade_values = []
         for g in grade.findall("g"):
@@ -641,13 +626,10 @@ async def pc_save(request: Request):
 
     response = E.response(E.pc(iidxid=xid, cltype=clt))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/pc/visit")
-async def pc_visit(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("pc/visit")
+async def pc_visit(ctx: Ctx):
 
     response = E.response(
         E.pc(
@@ -660,18 +642,15 @@ async def pc_visit(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("pc/reg")
+async def pc_reg(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-@router.post("/{gameinfo}/pc/reg")
-async def pc_reg(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
-
-    cid = request_info["root"][0].attrib["cid"]
-    name = request_info["root"][0].attrib["name"]
-    pid = request_info["root"][0].attrib["pid"]
+    cid = ctx.info["root"][0].attrib["cid"]
+    name = ctx.info["root"][0].attrib["name"]
+    pid = ctx.info["root"][0].attrib["pid"]
 
     db = get_db().table("iidx_profile")
     all_profiles_for_card = db.get(Query().card == cid)
@@ -864,15 +843,11 @@ async def pc_reg(request: Request):
 
     response = E.response(E.pc(id=card, id_str=card_split))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/pc/logout")
-async def pc_logout(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("pc/logout")
+async def pc_logout(ctx: Ctx):
 
     response = E.response(E.pc())
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

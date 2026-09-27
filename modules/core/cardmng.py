@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Request, Response
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 from tinydb import Query, where
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/core", tags=["cardmng"])
-
+set_xrpc_defaults(service="cardmng")
 
 def get_target_table(game_id):
     target_table = {
@@ -21,7 +20,6 @@ def get_target_table(game_id):
 
     return target_table[game_id]
 
-
 def get_profile(game_id, cid):
     target_table = get_target_table(game_id)
     profile = get_db().table(target_table).get(where("card") == cid)
@@ -34,7 +32,6 @@ def get_profile(game_id, cid):
 
     return profile
 
-
 def get_game_profile(game_id, game_version, cid):
     profile = get_profile(game_id, cid)
 
@@ -42,7 +39,6 @@ def get_game_profile(game_id, game_version, cid):
         profile["version"][str(game_version)] = {}
 
     return profile["version"][str(game_version)]
-
 
 def create_profile(game_id, game_version, cid, pin):
     target_table = get_target_table(game_id)
@@ -52,15 +48,13 @@ def create_profile(game_id, game_version, cid, pin):
 
     get_db().table(target_table).upsert(profile, where("card") == cid)
 
+@xrpc("cardmng/authpass")
+async def cardmng_authpass(ctx: Ctx):
 
-@router.post("/{gameinfo}/cardmng/authpass")
-async def cardmng_authpass(request: Request):
-    request_info = await core_process_request(request)
+    cid = ctx.info["root"][0].attrib["refid"]
+    passwd = ctx.info["root"][0].attrib["pass"]
 
-    cid = request_info["root"][0].attrib["refid"]
-    passwd = request_info["root"][0].attrib["pass"]
-
-    target_table = get_target_table(request_info["model"])
+    target_table = get_target_table(ctx.info["model"])
     profile = get_db().table(target_table).get(where("card") == cid)
     if profile is None or passwd != profile.get("pin", None):
         status = 116
@@ -69,28 +63,22 @@ async def cardmng_authpass(request: Request):
 
     response = E.response(E.authpass(status=status))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/cardmng/bindmodel")
-async def cardmng_bindmodel(request: Request):
-    request_info = await core_process_request(request)
+@xrpc("cardmng/bindmodel")
+async def cardmng_bindmodel(ctx: Ctx):
 
     response = E.response(E.bindmodel(dataid=1))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("cardmng/getrefid")
+async def cardmng_getrefid(ctx: Ctx):
 
-@router.post("/{gameinfo}/cardmng/getrefid")
-async def cardmng_getrefid(request: Request):
-    request_info = await core_process_request(request)
+    cid = ctx.info["root"][0].attrib["cardid"]
+    passwd = ctx.info["root"][0].attrib["passwd"]
 
-    cid = request_info["root"][0].attrib["cardid"]
-    passwd = request_info["root"][0].attrib["passwd"]
-
-    create_profile(request_info["model"], request_info["game_version"], cid, passwd)
+    create_profile(ctx.info["model"], ctx.info["game_version"], cid, passwd)
 
     response = E.response(
         E.getrefid(
@@ -99,17 +87,14 @@ async def cardmng_getrefid(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("cardmng/inquire")
+async def cardmng_inquire(ctx: Ctx):
 
-@router.post("/{gameinfo}/cardmng/inquire")
-async def cardmng_inquire(request: Request):
-    request_info = await core_process_request(request)
+    cid = ctx.info["root"][0].attrib["cardid"]
 
-    cid = request_info["root"][0].attrib["cardid"]
-
-    profile = get_game_profile(request_info["model"], request_info["game_version"], cid)
+    profile = get_game_profile(ctx.info["model"], ctx.info["game_version"], cid)
     if profile:
         binded = 1
         newflag = 0
@@ -131,5 +116,4 @@ async def cardmng_inquire(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

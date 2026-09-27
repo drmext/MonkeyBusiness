@@ -1,18 +1,16 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import config
 
-from fastapi import APIRouter, Request, Response
 from tinydb import where
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
-router = APIRouter(prefix="/core", tags=["facility"])
+set_xrpc_defaults(service="facility")
 
-
-@router.post("/{gameinfo}/facility/get")
-async def facility_get(request: Request):
-    request_info = await core_process_request(request)
-    pcbid = request_info["root"].attrib["srcid"]
+@xrpc("facility/get")
+async def facility_get(ctx: Ctx):
+    pcbid = ctx.info["root"].attrib["srcid"]
 
     op = get_db().table("shop").get(where("pcbid") == pcbid)
     op = {} if op is None else op
@@ -42,7 +40,7 @@ async def facility_get(request: Request):
                 E("id", 3, __type="str"),
             ),
             E.portfw(
-                E.globalip(request.client.host, __type="ip4"),
+                E.globalip(ctx.request.client.host, __type="ip4"),
                 E.globalport(5700, __type="u16"),
                 E.privateport(5700, __type="u16"),
             ),
@@ -73,5 +71,4 @@ async def facility_get(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response

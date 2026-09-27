@@ -1,17 +1,13 @@
+from modules.registry import Ctx, set_xrpc_defaults, xrpc
 import time
 from enum import IntEnum
 
-from fastapi import APIRouter, Request, Response
 from tinydb import where
 
-from core_common import core_process_request, core_prepare_response, E
+from core_common import E
 from core_database import get_db
 
 import config
-
-router = APIRouter(prefix="/local", tags=["local"])
-router.model_whitelist = ["LDJ", "KDZ", "JDZ"]
-
 
 class ClearFlags(IntEnum):
     NO_PLAY = 0
@@ -23,14 +19,14 @@ class ClearFlags(IntEnum):
     EX_HARD_CLEAR = 6
     FULL_COMBO = 7
 
+set_xrpc_defaults(service="local", models=["LDJ", "KDZ", "JDZ"])
 
-@router.post("/{gameinfo}/music/getrank")
-async def music_getrank(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("music/getrank")
+async def music_getrank(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
-    iidxid = int(request_info["root"][0].attrib["iidxid"])
-    play_style = int(request_info["root"][0].attrib["cltype"])
+    iidxid = int(ctx.info["root"][0].attrib["iidxid"])
+    play_style = int(ctx.info["root"][0].attrib["cltype"])
 
     all_scores = {}
     db = get_db()
@@ -85,14 +81,11 @@ async def music_getrank(request: Request):
 
     assert response is not None
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/music/crate")
-async def music_crate(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("music/crate")
+async def music_crate(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     db = get_db()
     all_score_stats = db.table("iidx_score_stats").search(
@@ -127,18 +120,15 @@ async def music_crate(request: Request):
         E.music(*[E.c(crate[k] + fcrate[k], mid=k, __type="u8") for k in crate])
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
-
-@router.post("/{gameinfo}/music/reg")
-async def music_reg(request: Request):
-    request_info = await core_process_request(request)
-    game_version = request_info["game_version"]
+@xrpc("music/reg")
+async def music_reg(ctx: Ctx):
+    game_version = ctx.info["game_version"]
 
     timestamp = time.time()
 
-    root = request_info["root"][0]
+    root = ctx.info["root"][0]
 
     clear_flg = int(root.attrib["cflg"])
     clid = int(root.attrib["clid"])
@@ -337,17 +327,14 @@ async def music_reg(request: Request):
         )
     )
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
 
+@xrpc("music/appoint")
+async def music_appoint(ctx: Ctx):
 
-@router.post("/{gameinfo}/music/appoint")
-async def music_appoint(request: Request):
-    request_info = await core_process_request(request)
-
-    iidxid = int(request_info["root"][0].attrib["iidxid"])
-    music_id = int(request_info["root"][0].attrib["mid"])
-    chart_id = int(request_info["root"][0].attrib["clid"])
+    iidxid = int(ctx.info["root"][0].attrib["iidxid"])
+    music_id = int(ctx.info["root"][0].attrib["mid"])
+    chart_id = int(ctx.info["root"][0].attrib["clid"])
 
     db = get_db()
     record = db.table("iidx_scores_best").get(
@@ -369,5 +356,4 @@ async def music_appoint(request: Request):
 
     response = E.response(E.music(*vals))
 
-    response_body, response_headers = await core_prepare_response(request, response)
-    return Response(content=response_body, headers=response_headers)
+    return response
