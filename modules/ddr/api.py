@@ -1,10 +1,10 @@
+from dataclasses import dataclass
 from typing import Optional, Dict, List, Tuple
 from os import path
 import json
 import struct
 
 import lxml.etree as ET
-from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route, Router
@@ -12,16 +12,18 @@ from tinydb import where
 
 import utils.card as conv
 from core_database import get_db
-from modules.webapi import endpoint, read_model
+from modules.webapi import MAX_UPLOAD_BYTES, endpoint, read_model
 from utils.lz77 import lz77_decode
 
 
-class DDR_Profile_Main_Items(BaseModel):
+@dataclass
+class DDR_Profile_Main_Items:
     card: str
     pin: str
 
 
-class DDR_Profile_19_Items(BaseModel):
+@dataclass
+class DDR_Profile_19_Items:
     game_version: Optional[int]
     calories_disp: Optional[bool]
     character: Optional[str]
@@ -41,7 +43,8 @@ class DDR_Profile_19_Items(BaseModel):
     double_grade: Optional[int]
 
 
-class DDR_Profile_20_Items(BaseModel):
+@dataclass
+class DDR_Profile_20_Items:
     game_version: Optional[int]
     common_dancername: Optional[str]
     common_area: Optional[str]
@@ -49,6 +52,13 @@ class DDR_Profile_20_Items(BaseModel):
     rival_2_ddr_id: Optional[int]
     rival_3_ddr_id: Optional[int]
     customize: Optional[dict]
+
+
+def _on_off(value) -> str:
+    """Accept bool or On/Off-like strings from the webui; store canonical On/Off."""
+    if isinstance(value, str):
+        return "On" if value.strip().lower() in ("on", "true", "1") else "Off"
+    return "On" if value else "Off"
 
 
 @endpoint
@@ -86,13 +96,13 @@ async def ddr_profile_id_19_patch(request: Request):
     game_profile = profile["version"].get("19", {})
 
     game_profile["game_version"] = item.game_version
-    game_profile["calories_disp"] = "On" if item.calories_disp else "Off"
+    game_profile["calories_disp"] = _on_off(item.calories_disp)
     game_profile["character"] = item.character
     game_profile["arrow_skin"] = item.arrow_skin
     game_profile["filter"] = item.filter
     game_profile["guideline"] = item.guideline
     game_profile["priority"] = item.priority
-    game_profile["timing_disp"] = "On" if item.timing_disp else "Off"
+    game_profile["timing_disp"] = _on_off(item.timing_disp)
     game_profile["common"] = item.common
     game_profile["option"] = item.option
     game_profile["last"] = item.last
@@ -241,9 +251,7 @@ class ARC:
 
 @endpoint
 async def ddr_receive_mdb(request: Request):
-    form = await request.form()
-    upload = form["file"]
-    data = await upload.read()
+    data = await request.body()
     arc = ARC(data)
     try:
         mdb_new = ET.fromstring(
@@ -312,6 +320,11 @@ router = Router(
         Route("/scores_best/{ddr_id}", ddr_scores_best_id, methods=["GET"]),
         Route("/mcode/{mcode}/all", ddr_scores_mcode_all, methods=["GET"]),
         Route("/mcode/{mcode}/best", ddr_scores_mcode_best, methods=["GET"]),
-        Route("/parse_mdb/upload", ddr_receive_mdb, methods=["POST"]),
+        Route(
+            "/parse_mdb/upload",
+            ddr_receive_mdb,
+            methods=["POST"],
+            max_body_size=MAX_UPLOAD_BYTES,
+        ),
     ]
 )

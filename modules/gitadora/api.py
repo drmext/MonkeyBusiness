@@ -1,6 +1,5 @@
-from typing import Optional
+from dataclasses import dataclass, field
 
-from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route, Router
@@ -11,16 +10,18 @@ from core_database import get_db
 from modules.webapi import endpoint, read_model
 
 
-class GFDM_Profile_Main_Items(BaseModel):
+@dataclass
+class GFDM_Profile_Main_Items:
     card: str
     pin: str
 
 
-class GFDM_Profile_Version_Items(BaseModel):
+@dataclass
+class GFDM_Profile_Version_Items:
     game_version: int
     name: str
     title: str
-    rival_card_ids: list = []
+    rival_card_ids: list = field(default_factory=list)
 
 
 @endpoint

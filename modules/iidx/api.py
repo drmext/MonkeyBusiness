@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from typing import Optional
 from os import path
 import json
 import xml.etree.ElementTree as ET
 
-from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route, Router
@@ -12,15 +12,17 @@ from tinydb import where
 import utils.card as conv
 import utils.musicdata_tool as mdt
 from core_database import get_db
-from modules.webapi import endpoint, read_model
+from modules.webapi import MAX_UPLOAD_BYTES, endpoint, read_model
 
 
-class IIDX_Profile_Main_Items(BaseModel):
+@dataclass
+class IIDX_Profile_Main_Items:
     card: str
     pin: str
 
 
-class IIDX_Profile_Version_Items(BaseModel):
+@dataclass
+class IIDX_Profile_Version_Items:
     djname: Optional[str]
     region: Optional[int]
     head: Optional[int]
@@ -256,9 +258,7 @@ async def iidx_score_stats_song(request: Request):
 
 @endpoint
 async def iidx_receive_mdb(request: Request):
-    form = await request.form()
-    upload = form["file"]
-    data = await upload.read()
+    data = await request.body()
 
     iidx_bin = path.join("webui", "music_data.bin")
     iidx_vid = path.join("webui", "video_music_list.xml")
@@ -346,6 +346,11 @@ router = Router(
         Route("/class_best/{iidx_id}", iidx_class_best, methods=["GET"]),
         Route("/score_stats/all", iidx_score_stats, methods=["GET"]),
         Route("/score_stats/{music_id}", iidx_score_stats_song, methods=["GET"]),
-        Route("/parse_mdb/upload", iidx_receive_mdb, methods=["POST"]),
+        Route(
+            "/parse_mdb/upload",
+            iidx_receive_mdb,
+            methods=["POST"],
+            max_body_size=MAX_UPLOAD_BYTES,
+        ),
     ]
 )

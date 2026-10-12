@@ -3,17 +3,25 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Type
+from dataclasses import fields
+from typing import Any, Callable, Type, TypeVar
 
-from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+# Music-data uploads are held in memory, so reject anything larger than this.
+MAX_UPLOAD_BYTES = 128 * 1024 * 1024
 
-async def read_model(request: Request, model: Type[BaseModel]) -> BaseModel:
+T = TypeVar("T")
+
+
+async def read_model(request: Request, model: Type[T]) -> T:
     body = await request.body()
     data = json.loads(body) if body else {}
-    return model.model_validate(data)
+    if not isinstance(data, dict):
+        raise ValueError("JSON body must be an object")
+    names = {field.name for field in fields(model)}
+    return model(**{key: value for key, value in data.items() if key in names})
 
 
 def as_response(value: Any) -> Response:

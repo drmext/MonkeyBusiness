@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from os import path
 from urllib.parse import unquote, urlencode, urlparse, urlunparse
@@ -19,6 +18,7 @@ import config
 import modules
 import utils.card as conv
 from core_common import E, EamuseError, core_prepare_response, core_process_request
+from core_database import flush_db
 from modules.registry import dispatch, iter_services
 
 loopback = "127.0.0.1"
@@ -186,8 +186,6 @@ def _build_webui() -> Starlette:
         routes.insert(0, Mount(mount_path, app=api_router))
 
     if path.exists("webui"):
-        with open(path.join("webui", "monkey.json"), "w") as f:
-            json.dump(settings, f, indent=2)
         routes.insert(0, Mount("/webui", app=StaticFiles(directory="webui", html=True)))
     else:
         routes.insert(0, Route("/webui", redirect_webui_missing, methods=["GET"]))
@@ -214,46 +212,54 @@ async def _send_response(response: Response, scope: Scope, receive: Receive, sen
 
 async def app(scope: Scope, receive: Receive, send: Send) -> None:
     if scope["type"] == "lifespan":
-        await webui_app(scope, receive, send)
+
+        async def send_with_flush(message):
+            if message["type"] == "lifespan.shutdown.complete":
+                flush_db()
+            await send(message)
+
+        await webui_app(scope, receive, send_with_flush)
         return
 
     if scope["type"] != "http":
         return
 
-    raw_path = unquote(scope.get("path") or "")
-    method = scope.get("method", "GET").upper()
-
-    # WebUI / static / config / card converter
-    if raw_path == "/" or any(
-        raw_path == p or raw_path.startswith(p + "/") for p in _WEBUI_PREFIXES
-    ):
-        await webui_app(scope, receive, send)
-        return
-
-    if method != "POST":
-        await _send_response(Response(status_code=404), scope, receive, send)
-        return
-
-    request = Request(scope, receive)
-
+    response: Response | None = None
     try:
-        # services.get
-        if raw_path.rstrip("/") == "/core" or _CORE_SERVICES_GET.match(raw_path):
-            response = await services_get(request)
-        elif raw_path.rstrip("/") == "/fwdr":
-            response = await handle_xrpc(request)
-        else:
-            # slashed: /{svc}/{gameinfo}/{path...} — model is the gameinfo segment
-            parts = [p for p in raw_path.strip("/").split("/") if p]
-            if len(parts) >= 3:
-                scope = dict(scope)
-                scope["path_params"] = {"path": "/".join(parts[2:])}
-                request = Request(scope, receive)
-                model = request.query_params.get("model") or parts[1]
-                response = await handle_xrpc(request, model=model)
-            else:
-                response = Response(status_code=404)
-    except EamuseError as exc:
-        response = Response(status_code=exc.status_code, content=exc.detail or b"")
+        raw_path = unquote(scope.get("path") or "")
+        method = scope.get("method", "GET").upper()
 
-    await _send_response(response, scope, receive, send)
+        # WebUI / static / config / card converter
+        if raw_path == "/" or any(
+            raw_path == p or raw_path.startswith(p + "/") for p in _WEBUI_PREFIXES
+        ):
+            await webui_app(scope, receive, send)
+        elif method != "POST":
+            response = Response(status_code=404)
+        else:
+            request = Request(scope, receive)
+
+            try:
+                # services.get
+                if raw_path.rstrip("/") == "/core" or _CORE_SERVICES_GET.match(raw_path):
+                    response = await services_get(request)
+                elif raw_path.rstrip("/") == "/fwdr":
+                    response = await handle_xrpc(request)
+                else:
+                    # slashed: /{svc}/{gameinfo}/{path...} — model is the gameinfo segment
+                    parts = [p for p in raw_path.strip("/").split("/") if p]
+                    if len(parts) >= 3:
+                        scope = dict(scope)
+                        scope["path_params"] = {"path": "/".join(parts[2:])}
+                        request = Request(scope, receive)
+                        model = request.query_params.get("model") or parts[1]
+                        response = await handle_xrpc(request, model=model)
+                    else:
+                        response = Response(status_code=404)
+            except EamuseError as exc:
+                response = Response(status_code=exc.status_code, content=exc.detail or b"")
+    finally:
+        flush_db()
+
+    if response is not None:
+        await _send_response(response, scope, receive, send)

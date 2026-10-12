@@ -16,7 +16,7 @@ def get_ip():
 
 ip = get_ip()
 port = 8000
-response_compression = True
+response_compression = False
 verbose_log = False
 dev_reload = False
 
